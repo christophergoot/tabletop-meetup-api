@@ -1,6 +1,6 @@
 const express = require('express');
 const app = express();
-const router = express.Router();
+// const router = express.Router();
 
 const PORT = process.env.PORT || 3030;
 
@@ -11,10 +11,10 @@ app.use('/api/events/', eventsRouter);
 
 
 app.get('/api/', (req, res) => {
-  res.json({
-    ok: true,
-    message: 'you found the API router'
-  });
+	res.json({
+		ok: true,
+		message: 'you found the API router'
+	});
 });
 
 app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
