@@ -6,7 +6,7 @@ const { app } = require('../server');
 const should = chai.should();
 chai.use(chaiHttp);
 
-describe('/', function () {
+describe('/api', function () {
 
 	it('should 200 on GET request to /', function () {
 		return chai.request(app)
