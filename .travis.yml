@@ -1,0 +1,11 @@
+language: node_js
+node_js: node
+services:
+- mongodb
+deploy:
+  provider: heroku
+  api_key:
+    secure: U1lbxR3bEmiGkc+8kuBQcDmav/UgRVPWDqcY4R8gfCnrIBW+nsCShGLG2mHqLcbqiLnRpIQTrWXTcODOxzB4Ke+Ax8vv4MGRZAPvUB5Lb2G8HcQqPKWII9g/ipGNZBYXrziXwidAm7oWQhLD2rOYxP9LlsBn+BF7ymSYSP6TZ3jlg8c27j+g0ChIMauwXxUKNDvgsLSs9nBvAaEV8E8hz0rIEYLYM3QqfW/V4HRuSMqrPUOltcCDAv8pPgb9pVwBqHGHQY10i33fVaxPurTrl2LOCqeVMxDMq92mhB7W8rvAZTcORN1XU3sgq5i0YFOpdfN4ilnhniaiJpi9CKhIQs7PihD7+AfyxjSxCDtoNal9x14p9E0S/Rj5hg7BTbcxjlWiMTXUXNr1IoG/uMQxb850IYZPr2TQB5M5KYcCv55W6nlZyR5dHajJRoRUdDdwjO8qMIwUK6EY2Wpr5R4eUMowMtAiD+U+o1myluorGQkDalTkWuymElSwSrsDatTl5BjlP/0wtXtLLMObK0he9o/CEpJh3B7tpOz4+PV1CHSsmXiwDiOD4Ejyn2ErUXfOrt5QuAJMSZeWh2rJCvzOqXJgqAjgOy35qqEwjIJSrh889sCXNbRgGJ+pvEyqah2zYR4qAS6RTSHqrf2pylZVwTay3YHEezVQ8soz6Yrszoo=
+  app: tabletop-meetup-api
+  on:
+    repo: christophergoot/tabletop-meetup-api
