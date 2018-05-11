@@ -1,3 +1,5 @@
+'use strict';
+
 require('dotenv').config();
 const express = require('express');
 const app = express();
@@ -5,6 +7,15 @@ const morgan = require('morgan');
 const { DATABASE_URL, PORT } = require('./config');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
+
+app.use(function (req, res, next) { 
+	res.setHeader('Access-Control-Allow-Origin', '*'); 
+	res.header('Access-Control-Allow-Headers', 'Content-Type, X-API-KEY'); 
+	res.setHeader('Content-Type', 'application/json; charset=utf-8'); 
+	return next(); 
+});
+
+
 
 const { router: usersRouter } = require('./routers/users');
 const { router: eventsRouter } = require('./routers/events');
@@ -20,6 +31,13 @@ app.get('/api/', (req, res) => {
 	res.json({
 		ok: true,
 		message: 'you found the API router'
+	});
+});
+
+app.post('/api/seed/', (req, res) => {
+	const { modelType } = req.params;
+	return User.insertMany(seedData).then(e => {
+		res.json(e);
 	});
 });
 
@@ -59,6 +77,10 @@ function closeServer() {
 	});
 }
 
+function tearDownDb() {
+	return mongoose.connection.dropDatabase();
+}
+
 // if server.js is called directly (aka, with `node server.js`), this block
 // runs. but we also export the runServer command so other code (for instance, test code) can start the server as needed.
 if (require.main === module) {
@@ -68,4 +90,4 @@ if (require.main === module) {
 // app.listen(process.env.PORT || 8080);
 
 
-module.exports = { runServer, app, closeServer };
+module.exports = { runServer, app, closeServer, tearDownDb };

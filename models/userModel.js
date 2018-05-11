@@ -5,6 +5,8 @@ mongoose.Promise = global.Promise;
 
 const userSchema = mongoose.Schema({
 	userId: String,
+	firstName: String,
+	lastName: String,
 	userName: String,
 	bggId: String,
 	associated: {
@@ -23,13 +25,22 @@ const userSchema = mongoose.Schema({
 userSchema.methods.serialize = function() {
 	return {
 		userId: this._id,
+		// fullName: this.fullName,
+		firstName: this.firstName,
+		lastName: this.lastName,
 		userName: this.userName,
 		bggId: this.bggId,
 		associated: this.associated
 	};
 };
 
-userSchema.virtual('name').get(() => this.firstName + ' ' + this.lastName);
+// userSchema.virtual('fullName').get(() => {
+// 	let lastName;
+// 	if (!this.lastName) lastName = 'virtual.lastName';
+// 	else lastName = this.lastName;
+// 	return (this.firstName + ' ' + lastName).trim();
+// });
+
 const User = mongoose.model('User', userSchema);
 
 module.exports = { User };

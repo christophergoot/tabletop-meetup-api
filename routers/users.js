@@ -10,8 +10,9 @@ router.get('/', (req, res) => {
 });
 
 function getUser(userId) {
+	console.log('userId', userId);
 	return User
-		.findOne({ 'userId': userId })
+		.findOne({ '_id': userId })
 		.then(user => user.serialize());
 }
 
@@ -24,4 +25,4 @@ router.get('/:userId', (req, res) => {
 		}));
 });
 
-module.exports = { router };
+module.exports = { router, getUser };
