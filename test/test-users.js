@@ -31,6 +31,7 @@ describe('/api/users/:userId', () => {
 			.then(res => {
 				res.should.include.keys('userId', 'firstName');
 				res.userId.should.deep.equal(userId);
+				res.email.should.deep.equal(knownUser.email);
 				res.firstName.should.deep.equal(knownUser.firstName);
 			});
 	});

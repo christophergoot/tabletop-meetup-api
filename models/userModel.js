@@ -5,6 +5,7 @@ mongoose.Promise = global.Promise;
 
 const userSchema = mongoose.Schema({
 	userId: String,
+	email: String,
 	firstName: String,
 	lastName: String,
 	userName: String,
@@ -25,6 +26,7 @@ const userSchema = mongoose.Schema({
 userSchema.methods.serialize = function() {
 	return {
 		userId: this._id,
+		email: this.email,
 		// fullName: this.fullName,
 		firstName: this.firstName,
 		lastName: this.lastName,

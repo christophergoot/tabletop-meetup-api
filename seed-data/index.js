@@ -9,6 +9,7 @@ function seedUsers() {
 const seedUserData = [
 	{
 		'bggId' : '507102',
+		'email' : 'goot.fake@email.com',
 		'userName' : 'goot',
 		'firstName' : 'Christopher',
 		'lastName' : 'Gutierrez',
@@ -56,21 +57,25 @@ const seedUserData = [
 	},
 	{
 		'firstName' : 'Emma',
+		'email' : 'emma.fake@email.com',
 		'lastName' : 'Holland'
 	},
 	{
 		'bggId' : '311230',
+		'email' : 'juan.fake@email.com',
 		'firstName' : 'Juan',
 		'lastName' : 'Gargia',
 		'userName' : 'Pastor_Mora'
 	},
 	{
 		'bggId' : '701708',
+		'email' : 'terry.fake@email.com',
 		'firstName': 'Terry',
 		'userName' : 'soltzt'
 	},
 	{
 		'bggId' : '1130617',
+		'email' : 'cloyd.fake@email.com',
 		'firstName' : 'Cloyd',
 		'userName' : 'Cloyd'
 	}
