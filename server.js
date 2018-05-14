@@ -4,9 +4,16 @@ require('dotenv').config();
 const express = require('express');
 const app = express();
 const morgan = require('morgan');
-const { DATABASE_URL, PORT } = require('./config');
+const { DATABASE_URL, PORT, CLIENT_ORIGIN } = require('./config');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
+const passport = require('passport');
+
+const jwtAuth = passport.authenticate('jwt', { session: false });
+const { router: authRouter, localStrategy, jwtStrategy } = require('./routers/auth');
+
+passport.use(localStrategy);
+passport.use(jwtStrategy);
 
 app.use(function (req, res, next) { 
 	res.setHeader('Access-Control-Allow-Origin', '*'); 
@@ -16,7 +23,6 @@ app.use(function (req, res, next) {
 });
 
 const cors = require('cors');
-const {CLIENT_ORIGIN} = require('./config');
 app.use(
 	cors({
 		origin: CLIENT_ORIGIN
@@ -27,11 +33,10 @@ const { router: usersRouter } = require('./routers/users');
 const { router: eventsRouter } = require('./routers/events');
 app.use('/api/users/', usersRouter);
 app.use('/api/events/', eventsRouter);
+app.use('/api/auth/', authRouter);
 
 app.use(morgan('common'));
 app.use(bodyParser.json());
-
-// app.use('*', (req, res) => res.status(404).json({ message: 'Not Found' }));
 
 app.get('/api/', (req, res) => {
 	res.json({
@@ -40,12 +45,14 @@ app.get('/api/', (req, res) => {
 	});
 });
 
-app.post('/api/seed/', (req, res) => {
-	const { modelType } = req.params;
-	return User.insertMany(seedData).then(e => {
-		res.json(e);
+// A protected endpoint which needs a valid JWT to access it
+app.get('/api/protected', jwtAuth, (req, res) => {
+	return res.json({
+		data: 'rosebud'
 	});
 });
+
+app.use('*', (req, res) => res.status(404).json({ message: 'Not Found' }));
 
 let server;
 
@@ -56,7 +63,7 @@ function runServer(databaseUrl = DATABASE_URL, port = PORT) {
 				return reject(err);
 			}
 			server = app.listen(port, () => {
-				console.log(`Your app is listening on port ${port}`);
+				console.log(`Tabletop Meetup API is listening on port ${port}`);
 				resolve();
 			})
 				.on('error', err => {

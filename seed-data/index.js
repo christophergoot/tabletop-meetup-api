@@ -8,6 +8,33 @@ function seedUsers() {
 
 const seedUserData = [
 	{
+		'firstName' : '',
+		'lastName' : '',
+		'username' : 'christophergoot',
+		'password' : '$2a$10$oXw1Mir26nNcayff01eE3.I/WztsYAKKVl21VyHKiYxkODBxhjXzm',
+	},
+	{
+		'firstName' : '',
+		'lastName' : '',
+		'username' : 'Pastor_Mora',
+		'password' : '$2a$10$oXw1Mir26nNcayff01eE3.I/WztsYAKKVl21VyHKiYxkODBxhjXzm',
+	},
+	{
+		'firstName' : '',
+		'lastName' : '',
+		'username' : 'soltzt',
+		'password' : '$2a$10$oXw1Mir26nNcayff01eE3.I/WztsYAKKVl21VyHKiYxkODBxhjXzm',
+	},
+	{
+		'firstName' : '',
+		'lastName' : '',
+		'username' : 'Cloyd',
+		'password' : '$2a$10$oXw1Mir26nNcayff01eE3.I/WztsYAKKVl21VyHKiYxkODBxhjXzm',
+	}
+];
+
+const oldSeedUserData = [
+	{
 		'bggId' : '507102',
 		'email' : 'goot.fake@email.com',
 		'userName' : 'goot',
