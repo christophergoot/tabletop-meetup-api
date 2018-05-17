@@ -31,9 +31,11 @@ app.use(
 
 const { router: usersRouter } = require('./routers/users');
 const { router: eventsRouter } = require('./routers/events');
+const { router: collectionsRouter } = require('./routers/collections');
 app.use('/api/users/', usersRouter);
 app.use('/api/events/', eventsRouter);
 app.use('/api/auth/', authRouter);
+app.use('/api/collections/', collectionsRouter);
 
 app.use(morgan('common'));
 app.use(bodyParser.json());
