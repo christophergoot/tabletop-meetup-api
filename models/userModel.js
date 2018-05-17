@@ -38,19 +38,6 @@ mongoose.Promise = global.Promise;
 // 	}
 // });
 
-// userSchema.methods.serialize = function() {
-// 	return {
-// 		userId: this._id,
-// 		email: this.email,
-// 		// fullName: this.fullName,
-// 		firstName: this.firstName,
-// 		lastName: this.lastName,
-// 		userName: this.userName,
-// 		bggId: this.bggId,
-// 		associated: this.associated
-// 	};
-// };
-
 const UserSchema = mongoose.Schema({
 	username: {
 		type: String,
@@ -67,7 +54,7 @@ const UserSchema = mongoose.Schema({
   
 UserSchema.methods.serialize = function() {
 	return {
-		userId: this._id,
+		userId: this._id.toString(),
 		username: this.username || '',
 		firstName: this.firstName || '',
 		lastName: this.lastName || ''
