@@ -23,11 +23,11 @@ app.use(function (req, res, next) {
 });
 
 const cors = require('cors');
-app.use(
-	cors({
-		origin: CLIENT_ORIGIN
-	})
-);
+// app.use(
+// 	cors({
+// 		origin: CLIENT_ORIGIN
+// 	})
+// );
 
 const { router: usersRouter } = require('./routers/users');
 const { router: eventsRouter } = require('./routers/events');
