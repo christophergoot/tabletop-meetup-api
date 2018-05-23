@@ -15,19 +15,12 @@ const { router: authRouter, localStrategy, jwtStrategy } = require('./routers/au
 passport.use(localStrategy);
 passport.use(jwtStrategy);
 
-app.use(function (req, res, next) { 
-	res.setHeader('Access-Control-Allow-Origin', '*'); 
-	res.header('Access-Control-Allow-Headers', 'Content-Type, X-API-KEY'); 
-	res.setHeader('Content-Type', 'application/json; charset=utf-8'); 
-	return next(); 
-});
-
 const cors = require('cors');
-// app.use(
-// 	cors({
-// 		origin: CLIENT_ORIGIN
-// 	})
-// );
+app.use(
+	cors({
+		origin: CLIENT_ORIGIN
+	})
+);
 
 const { router: usersRouter } = require('./routers/users');
 const { router: eventsRouter } = require('./routers/events');

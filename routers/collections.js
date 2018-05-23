@@ -2,12 +2,9 @@ const express = require('express');
 const router = express.Router();
 const { Collection } = require('../models');
 
-router.get('/', (req, res) => {
-	res.json({
-		ok: true,
-		message: 'you found the collections router'
-	});
-});
+const passport = require('passport');
+const jwtAuth = passport.authenticate('jwt', { session: false });
+router.use(jwtAuth);
 
 function getCollection(userId) {
 	return Collection
@@ -23,5 +20,13 @@ router.get('/:userId', (req, res) => {
 		}));
 });
 
+router.get('/', (req, res) => {
+	const { userId } = req.user;
+	getCollection(userId)
+		.then(collection => res.json(collection))
+		.catch(err => res.status(500).json({
+			error: 'something went wrong retreiving collection'
+		}));
+});
 
 module.exports = { router };
