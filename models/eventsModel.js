@@ -16,23 +16,6 @@ const EventSchema = mongoose.Schema({
 			host: Boolean,
 			invitedBy: String
 		}
-	],
-	games: [
-		{
-			gameOwnerId: String,
-			gameId: String,
-			name: String,
-			image: String,
-			thumbnail: String,
-			minPlayers: Number,
-			maxPlayers: Number,
-			playingTime: Number,
-			yearPublished: Number,
-			bggRating: Number,
-			averageRating: Number,
-			rank: Number,
-			isExpansion: Boolean,
-		}
 	]
 });
 

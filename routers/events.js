@@ -9,12 +9,24 @@ const jwtAuth = passport.authenticate('jwt', { session: false });
 router.use(jwtAuth);
 
 function attachDisplayName(userId) {
-	// const { userId } = guest;
 	return User.findOne({ '_id': userId })
 		.then(user => {
 			const userName = user.firstName + user.lastName || user.username;
-			// guest.name = userName;
 			return {userName, userId};
+		});
+}
+
+function retrieveCollection(userId) {
+	return Collection.findOne({userId})
+		// .then(collection => collection.public())
+		.then(collection => {
+			const filteredGames = collection.games.filter(game => game.owned);
+			const gamesOwned = JSON.parse(JSON.stringify(filteredGames));
+			gamesOwned.map(game => {
+				game.userId = userId;
+				return game;
+			});
+			return gamesOwned;
 		});
 }
 
@@ -28,7 +40,7 @@ router.get('/', (req, res) => {
 			events.forEach(event => {
 				event.guests.forEach(guest => {
 					userIds.push(guest.userId);
-				})
+				});
 			});
 			return Promise.all(userIds.map(attachDisplayName))
 				.then(users => {
@@ -38,28 +50,27 @@ router.get('/', (req, res) => {
 							guest.name = users.find(user => user.userId === guest.userId).userName;
 						});
 					});
-					return eventsCopy
-				})
+					return eventsCopy;
+				});
 		})
 		.then(events => { // attach combined gamelist to event
-			events.forEach(event => {
+			return Promise.all( events.map(event => {
 				const gameList = [];
-				event.guests.forEach(guest => {
-					Collection.findOne({'userId': guest.userId})
-						// .then(collection => JSON.parse(JSON.stringify(thing)))
-						.then(collection => collection.games.forEach(game => {
-							game.gameOwnerId = guest.userId;
-							gameList.push(game);
-							})
-						);
-				})
-				const eventCopy = JSON.parse(JSON.stringify(event));
-				eventCopy.games = gameList;
-				return eventCopy;
-			});
-			return events;
+				const guestList = [];
+				event.guests.forEach(guest => guestList.push(guest.userId));
+				return Promise.all(guestList.map(retrieveCollection))
+					.then(gameLists => {
+						gameLists.forEach(list => {
+							list.forEach(game => gameList.push(game));
+						});
+						const eventCopy = JSON.parse(JSON.stringify(event));
+						eventCopy.games = gameList;
+						return eventCopy;
+						return events;
+					});
+			}) );
 		})
-		.then(events => res.json(events))
+		.then(events => res.json(events));
 
 });
 

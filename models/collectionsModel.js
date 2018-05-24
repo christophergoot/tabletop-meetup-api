@@ -37,7 +37,27 @@ const CollectionSchema = mongoose.Schema({
 	]
 });
 
-
+CollectionSchema.methods.public = function() {
+	return {
+		userId: this._id.toString(),
+		games: [
+			{
+				gameId: this.gameId,
+				name: this.name,
+				image: this.image,
+				thumbnail: this.thumbnail,
+				minPlayers: this.minPlayers,
+				maxPlayers: this.maxPlayers,
+				playingTime: this.playingTime,
+				yearPublished: this.yearPublished,
+				bggRating: this.bggRating,
+				averageRating: this.averageRating,
+				rank: this.rank,
+				isExpansion: this.isExpansion,
+			}
+		]
+	};
+};
 
 const Collection = mongoose.model('Collection', CollectionSchema);
 
