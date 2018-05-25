@@ -23,28 +23,43 @@ function sortGamesByMethod(games, sort) {
 	return sorted;
 }
 
-function getCollection(userId, sort) {
-	return Collection
-		.findOne({ userId })
-		.then(collection => {
-			collection.games = sortGamesByMethod(collection.games, sort);
-			return collection;
-		});
-}
-
-router.get('/:userId', (req, res) => {
+async function getCollection(req) {
 	const { userId } = req.params;
 	const sort = {
 		method: req.query.sortMethod || 'name',
-		direction: req.query.sortDirection || 'asc'
+		direction: req.query.sortDirection || 1
 	};
-	// const sort = 'yearPublished';
-	// const sort = { yearPublished: 1 };
-	getCollection(userId, sort)
-		// .then(collection => {
-		// 	collection.games = sortGamesByMethod(collection.games, sort);
-		// 	return collection;
-		// })
+	const limit = parseInt(req.query.limit) || 25;
+	const sortQuery = {};
+	sortQuery['\'games.' + sort.method + '\''] = parseInt(sort.direction);
+	// const sortQuery = `games[${sort.method}]: ${sort.direction}`;
+	const gameList = await Collection
+		.aggregate( [
+			{ $match: { userId } },
+			{ $unwind: '$games' },
+			// { $match: { 'games.yearPublished': { $gte: 2005, $lte: 2010 } } },
+			{ $sort: sortQuery },
+			// { $skip: 100 },
+			{ $limit: limit }
+		] );
+	const games = [];
+	gameList.forEach(game => games.push(game.games));
+	collection = {games, userId};
+	return collection;
+}
+
+// do this:
+// db.getCollection('collections').aggregate( [
+// 	{ $match: { userId:"5af9d3aa04eaf40db2da662d" } },
+// 	{ $unwind: '$games' },
+// 	{ $match: { 'games.yearPublished': { $gt: 2000, $lt: 2010 } } },
+// 	{ $sort: { 'games.name': -1} },
+// 	// { $skip: 100 },
+// 	{ $limit: 25 }
+// 	] )
+
+router.get('/:userId', (req, res) => {
+	getCollection(req)
 		.then(collection => res.json(collection))
 		.catch(err => res.status(500).json({
 			error: 'something went wrong retreiving collection'
@@ -52,12 +67,7 @@ router.get('/:userId', (req, res) => {
 });
 
 router.get('/', (req, res) => {
-	const { userId } = req.user;
-	const sort = {
-		method: req.query.sortMethod || 'name',
-		direction: req.query.sortDirection || 'asc'
-	};
-	getCollection(userId, sort)
+	getCollection(req)
 		.then(collection => res.json(collection))
 		.catch(err => res.status(500).json({
 			error: 'something went wrong retreiving collection'
