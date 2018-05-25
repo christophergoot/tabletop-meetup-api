@@ -6,8 +6,8 @@ mongoose.Promise = global.Promise;
 const EventSchema = mongoose.Schema({
 	name: String,
 	location: String,
-	dateBegin: Date,
-	dateEnd: Date,
+	startDate: Date,
+	endDate: Date,
 	guests: [
 		{
 			// userId: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
@@ -29,8 +29,8 @@ EventSchema.methods.serialize = function() {
 	return {
 		eventId: this._id.toString(),
 		location: this.location,
-		dateBegin: this.dateBegin,
-		dateEnd: this.dateEnd,
+		startDate: this.startDate,
+		endDate: this.endDate,
 		guests: this.guests,
 		games: this.games
 	};

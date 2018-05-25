@@ -6,14 +6,45 @@ const passport = require('passport');
 const jwtAuth = passport.authenticate('jwt', { session: false });
 router.use(jwtAuth);
 
-function getCollection(userId) {
+
+function sortGamesByMethod(games, sort) {
+	const sorted = games.sort((a,b) => {
+		if (a[sort.method] < b[sort.method]) {
+			return -1;
+		} 
+
+		if (a[sort.method] > b[sort.method]) {
+			return 1;
+		} 
+
+		return 0;
+	});
+	if (sort.direction === 'desc') sorted.reverse();
+	return sorted;
+}
+
+function getCollection(userId, sort) {
 	return Collection
-		.findOne({ userId });
+		.findOne({ userId })
+		.then(collection => {
+			collection.games = sortGamesByMethod(collection.games, sort);
+			return collection;
+		});
 }
 
 router.get('/:userId', (req, res) => {
 	const { userId } = req.params;
-	getCollection(userId)
+	const sort = {
+		method: req.query.sortMethod || 'name',
+		direction: req.query.sortDirection || 'asc'
+	};
+	// const sort = 'yearPublished';
+	// const sort = { yearPublished: 1 };
+	getCollection(userId, sort)
+		// .then(collection => {
+		// 	collection.games = sortGamesByMethod(collection.games, sort);
+		// 	return collection;
+		// })
 		.then(collection => res.json(collection))
 		.catch(err => res.status(500).json({
 			error: 'something went wrong retreiving collection'
@@ -22,7 +53,11 @@ router.get('/:userId', (req, res) => {
 
 router.get('/', (req, res) => {
 	const { userId } = req.user;
-	getCollection(userId)
+	const sort = {
+		method: req.query.sortMethod || 'name',
+		direction: req.query.sortDirection || 'asc'
+	};
+	getCollection(userId, sort)
 		.then(collection => res.json(collection))
 		.catch(err => res.status(500).json({
 			error: 'something went wrong retreiving collection'
