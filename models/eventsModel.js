@@ -1,5 +1,5 @@
 'use strict';
-
+// const User = require('./userModel');
 const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
 
@@ -10,8 +10,9 @@ const EventSchema = mongoose.Schema({
 	endDate: Date,
 	guests: [
 		{
-			// userId: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-			userId: String,
+			user: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+			// userId: [{ type: String, ref: 'user' }],
+			userId: { type: String },
 			rsvp: String,
 			host: Boolean,
 			invitedBy: String

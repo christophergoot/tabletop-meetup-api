@@ -29,7 +29,12 @@ async function getCollection(req) {
 		method: req.query.sortMethod || 'name',
 		direction: req.query.sortDirection || 1
 	};
+	const { filter } = req.query;
+	const filterQuery = {};
+	filterQuery['\'games.' + filter + '\''] = true;
+
 	const limit = parseInt(req.query.limit) || 25;
+
 	const sortQuery = {};
 	sortQuery['\'games.' + sort.method + '\''] = parseInt(sort.direction);
 	// const sortQuery = `games[${sort.method}]: ${sort.direction}`;
@@ -37,7 +42,8 @@ async function getCollection(req) {
 		.aggregate( [
 			{ $match: { userId } },
 			{ $unwind: '$games' },
-			// { $match: { 'games.yearPublished': { $gte: 2005, $lte: 2010 } } },
+			{ $match: {'games.owned': true }},
+			// { $match: filterQuery },
 			{ $sort: sortQuery },
 			// { $skip: 100 },
 			{ $limit: limit }

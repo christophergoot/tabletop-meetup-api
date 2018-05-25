@@ -33,26 +33,8 @@ function retrieveCollection(userId) {
 router.get('/', (req, res) => {
 	const { userId } = req.user;
 	return Event
-		.find({'guests.userId':userId})
-		.then(events => events.map(event => event.serialize()))
-		.then(events => { // attach user's name to event guest list
-			const userIds = [];
-			events.forEach(event => {
-				event.guests.forEach(guest => {
-					userIds.push(guest.userId);
-				});
-			});
-			return Promise.all(userIds.map(attachDisplayName))
-				.then(users => {
-					const eventsCopy = JSON.parse(JSON.stringify(events));
-					eventsCopy.forEach(event => {
-						event.guests.forEach(guest => {
-							guest.name = users.find(user => user.userId === guest.userId).userName;
-						});
-					});
-					return eventsCopy;
-				});
-		})
+		.find({'guests.user':userId})
+		.populate('guests.user', ['firstName','lastName','username'])
 		.then(events => { // attach combined gamelist to event
 			return Promise.all( events.map(event => {
 				const gameList = [];
