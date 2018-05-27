@@ -25,15 +25,15 @@ function sortGamesByMethod(games, sort) {
 
 async function getCollection(req) {
 	const { userId } = req.params;
+	const { filter, sortMethod, sortDirection, skip, limit } = req.query;
 	const sort = {
-		method: req.query.sortMethod || 'name',
-		direction: req.query.sortDirection || 1
+		method: sortMethod || 'name',
+		direction: sortDirection || 1
 	};
-	const { filter } = req.query;
 	const filterQuery = {};
 	filterQuery['\'games.' + filter + '\''] = true;
 
-	const limit = parseInt(req.query.limit) || 25;
+	// limit = parseInt(limit) || 25;
 
 	const sortQuery = {};
 	sortQuery['\'games.' + sort.method + '\''] = parseInt(sort.direction);
@@ -50,7 +50,7 @@ async function getCollection(req) {
 		] );
 	const games = [];
 	gameList.forEach(game => games.push(game.games));
-	collection = {games, userId};
+	collection = { games, userId, sort };
 	return collection;
 }
 
