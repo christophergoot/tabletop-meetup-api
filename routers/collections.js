@@ -24,45 +24,44 @@ function sortGamesByMethod(games, sort) {
 }
 
 async function getCollection(req) {
-	const { userId } = req.params;
-	const { filter, sortMethod, sortDirection, skip, limit } = req.query;
+	let userId = '';
+	if (req.params.userId) userId = req.params.userId;
+	else userId = req.user.userId;
+	const { filter, sortMethod, sortDirection } = req.query;
+
+	const limit = parseInt(req.query.limit) || 25;
+	const page = parseInt(req.query.page) || 1;
+	const skip = (page -1) * limit;
+	
+	const filterQuery = {};
+	filterQuery['\'games.' + filter + '\''] = true;
+
 	const sort = {
 		method: sortMethod || 'name',
 		direction: sortDirection || 1
 	};
-	const filterQuery = {};
-	filterQuery['\'games.' + filter + '\''] = true;
-
-	// limit = parseInt(limit) || 25;
-
 	const sortQuery = {};
-	sortQuery['\'games.' + sort.method + '\''] = parseInt(sort.direction);
-	// const sortQuery = `games[${sort.method}]: ${sort.direction}`;
+	sortQuery[`games.${sort.method}`] = parseInt(sort.direction);
+	// const sortQuery = { 'games.name': -1 };
+	const pageCount = await Collection.findOne({userId})
+		.then(c => Math.ceil(c.games.length / limit));
+		
 	const gameList = await Collection
 		.aggregate( [
 			{ $match: { userId } },
 			{ $unwind: '$games' },
-			{ $match: {'games.owned': true }},
+			// { $match: {'games.owned': true }},
 			// { $match: filterQuery },
 			{ $sort: sortQuery },
-			// { $skip: 100 },
+			// { $sort: JSON.stringify(sortQuery) },
+			{ $skip: skip },
 			{ $limit: limit }
 		] );
 	const games = [];
 	gameList.forEach(game => games.push(game.games));
-	collection = { games, userId, sort };
+	const collection = { userId, sort, limit, page, pageCount, games };
 	return collection;
 }
-
-// do this:
-// db.getCollection('collections').aggregate( [
-// 	{ $match: { userId:"5af9d3aa04eaf40db2da662d" } },
-// 	{ $unwind: '$games' },
-// 	{ $match: { 'games.yearPublished': { $gt: 2000, $lt: 2010 } } },
-// 	{ $sort: { 'games.name': -1} },
-// 	// { $skip: 100 },
-// 	{ $limit: 25 }
-// 	] )
 
 router.get('/:userId', (req, res) => {
 	getCollection(req)

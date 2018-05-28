@@ -53,11 +53,9 @@ router.get('/:eventId', (req, res) => {
 	const { userId } = req.user;
 	return Event
 		.findOne({'_id':eventId})
-		.populate('guests.user', ['firstName','lastName','username'])
-		// .then(event => {
-		// 	console.log(event);
-		// 	return event;
-		// })
+		// .populate('guests.user', {firstName,lastName,username})
+		// .populate('guests.user', ['firstName','lastName','username'])
+		.populate('guests.user', 'firstName lastName username')
 		.then(event => event.serialize())
 		.then(event => attachGameList(event))
 		.then(event => res.json(event));
@@ -67,7 +65,7 @@ router.get('/', (req, res) => {
 	const { userId } = req.user;
 	return Event
 		.find({'guests.user':userId})
-		.populate('guests.user', ['firstName','lastName','username'])
+		.populate('guests.user', 'firstName lastName username')
 		.then(events => events.map(event => event.serialize()))
 
 		.then(events => { // attach combined gamelist to event

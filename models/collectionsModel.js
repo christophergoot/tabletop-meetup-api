@@ -58,7 +58,7 @@ CollectionSchema.methods.public = function() {
 		]
 	};
 };
-
+mongoose.set('debug', true);
 const Collection = mongoose.model('Collection', CollectionSchema);
 
 module.exports = { Collection };
