@@ -30,7 +30,27 @@ function retrieveGameList(userId) {
 		});
 }
 
-function attachGameList(event) {
+async function attachGameList(event) {
+	const userIds = event.guests.map(guest => guest.userId);
+	const gameList = await Collection.aggregate( [
+		{ $match: { userId: {$in: userIds } } },
+		{ $unwind: '$games' },
+		{ $match: { 'games.owned': true } },
+		{ $sort: { 'games.name': 1 } },
+		// { $sort: { field: 'games.name', test: -1 } },
+		{ $skip: 0 },
+		// { $limit: 5 },
+	] );
+	const eventCopy = JSON.parse(JSON.stringify(event));
+	eventCopy.games = {
+		...event.games,
+		list: gameList
+	};
+	return eventCopy;
+}
+
+
+function HACKEDattachGameList(event) {
 	const gameList = [];
 	const guestList = [];
 	event.guests.forEach(guest => guestList.push(guest.userId));
