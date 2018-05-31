@@ -23,13 +23,34 @@ function sortGamesByMethod(games, sort) {
 	return sorted;
 }
 
+const filter = [
+	{
+		field: 'yearPublished',
+		is: '$lte',
+		value: 2015,
+		and: '$gt',
+		andValue: 1985
+	},
+	{
+		field: 'rsvp',
+		is: '$eq',
+		value: 'attending'
+	}
+];
+const filterQuery = { $match: {} };
+filter.forEach(filter => {
+	if (filter.and)
+		filterQuery.$match[filter.field] = { [filter.is]: filter.value, [filter.and]: filter.andValue };
+	else filterQuery.$match[filter.field] = { [filter.is]: filter.value };
+});
+
 async function getCollection(req) {
 	let userId = '';
 	if (req.params.userId) userId = req.params.userId;
 	else userId = req.user.userId;
 	const { filter, sortMethod, sortDirection } = req.query;
 
-	const limit = parseInt(req.query.limit) || 25;
+	const limit = (parseInt(req.query.limit)) || 25;
 	const page = parseInt(req.query.page) || 1;
 	const skip = (page -1) * limit;
 	
@@ -42,21 +63,38 @@ async function getCollection(req) {
 	};
 	const sortQuery = {};
 	sortQuery[`games.${sort.method}`] = parseInt(sort.direction);
-	// const sortQuery = { 'games.name': -1 };
-	const pageCount = await Collection.findOne({userId})
-		.then(c => Math.ceil(c.games.length / limit));
+	
+	let pageCount = 0;
+	let gameList;
+
+	if (req.query.limit === '0') {
+		gameList = await Collection
+			.aggregate( [
+				{ $match: { userId } },
+				{ $unwind: '$games' },
+				// { $match: {'games.owned': true }},
+				// { $match: filterQuery },
+				{ $sort: sortQuery },
+				// { $sort: JSON.stringify(sortQuery) },
+				{ $skip: skip }
+			] );
+	} else {
+		pageCount = await Collection.findOne({userId})
+			.then(c => Math.ceil(c.games.length / limit));
+
+		gameList = await Collection
+			.aggregate( [
+				{ $match: { userId } },
+				{ $unwind: '$games' },
+				// { $match: {'games.owned': true }},
+				// { $match: filterQuery },
+				{ $sort: sortQuery },
+				// { $sort: JSON.stringify(sortQuery) },
+				{ $skip: skip },
+				{ $limit: limit }
+			] );
+	}
 		
-	const gameList = await Collection
-		.aggregate( [
-			{ $match: { userId } },
-			{ $unwind: '$games' },
-			// { $match: {'games.owned': true }},
-			// { $match: filterQuery },
-			{ $sort: sortQuery },
-			// { $sort: JSON.stringify(sortQuery) },
-			{ $skip: skip },
-			{ $limit: limit }
-		] );
 	const games = [];
 	gameList.forEach(game => games.push(game.games));
 	const collection = { userId, sort, limit, page, pageCount, games };
