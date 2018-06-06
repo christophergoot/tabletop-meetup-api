@@ -30,7 +30,48 @@ function retrieveGameList(userId) {
 		});
 }
 
-async function attachGameList(event,limit,skip,sort,filter) {
+function createFiltersFromQuery(query) {
+	const reservedFields = [
+		'sortMethod',
+		'sortDirection',
+		'page',
+		'pageCount',
+		'limit'
+	];
+	const filters = [];
+	for(let key in query) {
+		if(query.hasOwnProperty(key) && !reservedFields.includes(key)) {
+			const range = query[key].split(':');
+			if (range.length === 1) {
+				filters.push({
+					filed: key,
+					value: range[0]
+				});
+			} else {
+				filters.push({
+					field: key,
+					range: {
+						min: parseInt(range[0],10),
+						max: parseInt(range[1],10)
+					}
+				});
+			}
+		}
+	}
+	return filters;
+}
+
+function createMatchFromFilters(filters) {
+	const match = {$match: {}};
+	filters.forEach(filter => {
+		if (filter.value) match.$match[`games.${filter.field}`] = {$eq: filter.value};
+		else match.$match[`games.${filter.field}`] = {$gte: filter.range.min, $lte: filter.range.max};
+	});
+	return match;
+}
+
+async function attachGameList(event,limit,skip,sort,filters) {
+	const match = createMatchFromFilters(filters);
 	const userIds = event.guests.map(guest => guest.userId);
 	const sortQuery = {};
 	sortQuery[`games.${sort.method}`] = parseInt(sort.direction);
@@ -38,7 +79,7 @@ async function attachGameList(event,limit,skip,sort,filter) {
 	const gameList = await Collection.aggregate( [
 		{ $match: { userId: {$in: userIds } } },
 		{ $unwind: '$games' },
-		{ $match: { 'games.owned': true } },
+		match,
 		{ $sort: sortQuery },
 	] );
 	const games = [];
@@ -76,7 +117,7 @@ async function attachGameList(event,limit,skip,sort,filter) {
 		{	field: 'page', value: page },
 		{	field: 'pageCount', value: pageCount },
 		{	field: 'sort', value: sort },
-		{	field: 'filter', value: filter },
+		{	field: 'filters', value: filters },
 		{	field: 'games', value: games },
 	].forEach(el => eventCopy[el.field] = el.value);
 	
@@ -84,13 +125,18 @@ async function attachGameList(event,limit,skip,sort,filter) {
 }
 
 router.get('/:eventId', (req, res) => {
+
 	const { eventId } = req.params;
 	const { userId } = req.user;
-	const { filter, sortMethod, sortDirection } = req.query;
+	// const userId = '5af9f461e3370c0f57bd431c';
+
 	const sort = {
-		method: sortMethod || 'name',
-		direction: sortDirection || 1
+		method: req.query.sortMethod || 'name',
+		direction: req.query.sortDirection || 1
 	};
+
+	const filters = createFiltersFromQuery(req.query);
+
 	const limit = parseInt(req.query.limit) || 25;
 	const page = parseInt(req.query.page) || 1;
 	const skip = (page -1) * limit;
@@ -101,12 +147,18 @@ router.get('/:eventId', (req, res) => {
 		// .populate('guests.user', ['firstName','lastName','username'])
 		.populate('guests.user', 'firstName lastName username')
 		.then(event => event.serialize())
-		.then(event => attachGameList(event,limit,skip,sort,filter))
+		.then(event => attachGameList(event,limit,skip,sort,filters))
 		.then(event => res.json(event));
 });
 
 const addGames = event => {
-	return attachGameList(event,25,0,{method:'name',direction:1},'');
+	return attachGameList(
+		event,
+		25,
+		0,
+		{method:'name',direction:1},
+		[],
+	);
 };
 
 router.get('/', (req, res) => {
@@ -119,20 +171,8 @@ router.get('/', (req, res) => {
 		.then(async events => {
 			const many = await Promise.all(events.map(addGames));
 			console.log(many);
-			// events.map(async event => {
-			// 	const newEvent = await attachGameList(event,25,0,{method:'name',direction:1},'');
-			// 	return newEvent;
-			// });
 			return many;
 		})
-
-
-		// .then(events => { // attach combined gamelist to event
-		// 	return Promise.all(events.map(async event => {
-		// 		const eventWithGames = await attachGameList(event);
-		// 		return eventWithGames;
-		// 	}));
-		// })
 		.then(events => res.json(events));
 });
 
