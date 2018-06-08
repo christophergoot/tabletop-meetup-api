@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { Collection } = require('../models');
+const { createFiltersFromQuery, 
+	createMatchFromFilters } = require('./events');
+
 
 const passport = require('passport');
 const jwtAuth = passport.authenticate('jwt', { session: false });
@@ -48,15 +51,16 @@ async function getCollection(req) {
 	let userId = '';
 	if (req.params.userId) userId = req.params.userId;
 	else userId = req.user.userId;
-	const { filter, sortMethod, sortDirection } = req.query;
+	const { sortMethod, sortDirection } = req.query;
+
+	const filters = [];
+	createFiltersFromQuery(req.query).forEach(el => filters.push(el));
+	const match = createMatchFromFilters(filters);
 
 	const limit = (parseInt(req.query.limit)) || 25;
 	const page = parseInt(req.query.page) || 1;
 	const skip = (page -1) * limit;
 	
-	const filterQuery = {};
-	filterQuery['\'games.' + filter + '\''] = true;
-
 	const sort = {
 		method: sortMethod || 'name',
 		direction: sortDirection || 1
@@ -72,10 +76,8 @@ async function getCollection(req) {
 			.aggregate( [
 				{ $match: { userId } },
 				{ $unwind: '$games' },
-				// { $match: {'games.owned': true }},
-				// { $match: filterQuery },
+				match,
 				{ $sort: sortQuery },
-				// { $sort: JSON.stringify(sortQuery) },
 				{ $skip: skip }
 			] );
 	} else {
@@ -86,10 +88,8 @@ async function getCollection(req) {
 			.aggregate( [
 				{ $match: { userId } },
 				{ $unwind: '$games' },
-				// { $match: {'games.owned': true }},
-				// { $match: filterQuery },
+				match,
 				{ $sort: sortQuery },
-				// { $sort: JSON.stringify(sortQuery) },
 				{ $skip: skip },
 				{ $limit: limit }
 			] );
@@ -97,7 +97,7 @@ async function getCollection(req) {
 		
 	const games = [];
 	gameList.forEach(game => games.push(game.games));
-	const collection = { userId, sort, limit, page, pageCount, games };
+	const collection = { userId, sort, limit, page, pageCount, games, filters };
 	return collection;
 }
 

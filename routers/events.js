@@ -176,4 +176,4 @@ router.get('/', (req, res) => {
 		.then(events => res.json(events));
 });
 
-module.exports = { router };
+module.exports = { router, createMatchFromFilters, createFiltersFromQuery };
