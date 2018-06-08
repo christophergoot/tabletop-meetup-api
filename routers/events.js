@@ -44,7 +44,7 @@ function createFiltersFromQuery(query) {
 			const range = query[key].split(':');
 			if (range.length === 1) {
 				filters.push({
-					filed: key,
+					field: key,
 					value: range[0]
 				});
 			} else {
@@ -64,7 +64,8 @@ function createFiltersFromQuery(query) {
 function createMatchFromFilters(filters) {
 	const match = {$match: {}};
 	filters.forEach(filter => {
-		if (filter.value) match.$match[`games.${filter.field}`] = {$eq: filter.value};
+		if (filter.value === 'true') match.$match[`games.${filter.field}`] = true;
+		else if (filter.value === 'false') match.$match[`games.${filter.field}`] = false;
 		else match.$match[`games.${filter.field}`] = {$gte: filter.range.min, $lte: filter.range.max};
 	});
 	return match;
