@@ -8,27 +8,27 @@ const passport = require('passport');
 const jwtAuth = passport.authenticate('jwt', { session: false });
 router.use(jwtAuth);
 
-function attachDisplayName(userId) {
-	return User.findOne({ '_id': userId })
-		.then(user => {
-			const userName = user.firstName + user.lastName || user.username;
-			return {userName, userId};
-		});
-}
+// function attachDisplayName(userId) {
+// 	return User.findOne({ '_id': userId })
+// 		.then(user => {
+// 			const userName = user.firstName + user.lastName || user.username;
+// 			return {userName, userId};
+// 		});
+// }
 
-function retrieveGameList(userId) {
-	return Collection.findOne({userId})
-		// .then(collection => collection.public())
-		.then(collection => {
-			const filteredGames = collection.games.filter(game => game.owned);
-			const gamesOwned = JSON.parse(JSON.stringify(filteredGames));
-			gamesOwned.map(game => {
-				game.userId = userId;
-				return game;
-			});
-			return gamesOwned;
-		});
-}
+// function retrieveGameList(userId) {
+// 	return Collection.findOne({userId})
+// 		// .then(collection => collection.public())
+// 		.then(collection => {
+// 			const filteredGames = collection.games.filter(game => game.owned);
+// 			const gamesOwned = JSON.parse(JSON.stringify(filteredGames));
+// 			gamesOwned.map(game => {
+// 				game.userId = userId;
+// 				return game;
+// 			});
+// 			return gamesOwned;
+// 		});
+// }
 
 function createFiltersFromQuery(query) {
 	const reservedFields = [
@@ -129,7 +129,6 @@ router.get('/:eventId', (req, res) => {
 
 	const { eventId } = req.params;
 	const { userId } = req.user;
-	// const userId = '5af9f461e3370c0f57bd431c';
 
 	const sort = {
 		method: req.query.sortMethod || 'name',
@@ -144,8 +143,6 @@ router.get('/:eventId', (req, res) => {
 
 	return Event
 		.findOne({'_id':eventId})
-		// .populate('guests.user', {firstName,lastName,username})
-		// .populate('guests.user', ['firstName','lastName','username'])
 		.populate('guests.user', 'firstName lastName username')
 		.then(event => event.serialize())
 		.then(event => attachGameList(event,limit,skip,sort,filters))
@@ -176,5 +173,6 @@ router.get('/', (req, res) => {
 		})
 		.then(events => res.json(events));
 });
+
 
 module.exports = { router, createMatchFromFilters, createFiltersFromQuery };

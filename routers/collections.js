@@ -59,7 +59,7 @@ async function getCollection(req) {
 
 	const limit = (parseInt(req.query.limit)) || 25;
 	const page = parseInt(req.query.page) || 1;
-	const skip = (page -1) * limit;
+	let skip = (page -1) * limit;
 	
 	const sort = {
 		method: sortMethod || 'name',
@@ -68,33 +68,22 @@ async function getCollection(req) {
 	const sortQuery = {};
 	sortQuery[`games.${sort.method}`] = parseInt(sort.direction);
 	
-	let pageCount = 0;
 	let gameList;
 
-	if (req.query.limit === '0') {
-		gameList = await Collection
-			.aggregate( [
-				{ $match: { userId } },
-				{ $unwind: '$games' },
-				match,
-				{ $sort: sortQuery },
-				{ $skip: skip }
-			] );
-	} else {
-		pageCount = await Collection.findOne({userId})
-			.then(c => Math.ceil(c.games.length / limit));
+	gameList = await Collection
+		.aggregate( [
+			{ $match: { userId } },
+			{ $unwind: '$games' },
+			match,
+			{ $sort: sortQuery },
+		] );
 
-		gameList = await Collection
-			.aggregate( [
-				{ $match: { userId } },
-				{ $unwind: '$games' },
-				match,
-				{ $sort: sortQuery },
-				{ $skip: skip },
-				{ $limit: limit }
-			] );
-	}
-		
+	const pageCount = Math.ceil(gameList.length / limit);
+
+	if (req.query.limit === '0') skip = 0;
+	gameList.splice(0,skip);
+	if (limit) gameList.splice(limit);
+	
 	const games = [];
 	gameList.forEach(game => games.push(game.games));
 	const collection = { userId, sort, limit, page, pageCount, games, filters };
