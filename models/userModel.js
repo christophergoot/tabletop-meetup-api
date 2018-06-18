@@ -4,40 +4,6 @@ const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
 
-// const userSchema = mongoose.Schema({
-// 	userId: String,
-// 	email: {
-// 		type: String,
-// 		required: true,
-// 		unique: true
-// 	},
-// 	password: {
-// 		type: String,
-// 		required: true
-// 	},
-// 	firstName: {
-// 		type: String, 
-// 		default: ''
-// 	},
-// 	lastName: {
-// 		type: String, 
-// 		default: ''
-// 	},
-// 	userName: String,
-// 	bggId: String,
-// 	associated: {
-// 		players: [{
-// 			userId: String,
-// 		}],
-// 		events: [{
-// 			eventId: String
-// 		}],
-// 		locations: [{
-// 			locationId: String
-// 		}]
-// 	}
-// });
-
 const UserSchema = mongoose.Schema({
 	_id: mongoose.Schema.Types.ObjectId,
 	username: {
@@ -50,7 +16,8 @@ const UserSchema = mongoose.Schema({
 		required: true
 	},
 	firstName: {type: String, default: ''},
-	lastName: {type: String, default: ''}
+	lastName: {type: String, default: ''},
+	bggUsername: {type: String, default: ''}
 });
 
 UserSchema.methods.serialize = function() {
@@ -58,7 +25,8 @@ UserSchema.methods.serialize = function() {
 		userId: this._id.toString(),
 		username: this.username || '',
 		firstName: this.firstName || '',
-		lastName: this.lastName || ''
+		lastName: this.lastName || '',
+		bggUsername: this.bggUsername || ''
 	};
 };
   

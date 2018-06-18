@@ -1,34 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { Event, User, Collection } = require('../models');
-// const _ = require('lodash');
-
 
 const passport = require('passport');
 const jwtAuth = passport.authenticate('jwt', { session: false });
 router.use(jwtAuth);
-
-// function attachDisplayName(userId) {
-// 	return User.findOne({ '_id': userId })
-// 		.then(user => {
-// 			const userName = user.firstName + user.lastName || user.username;
-// 			return {userName, userId};
-// 		});
-// }
-
-// function retrieveGameList(userId) {
-// 	return Collection.findOne({userId})
-// 		// .then(collection => collection.public())
-// 		.then(collection => {
-// 			const filteredGames = collection.games.filter(game => game.owned);
-// 			const gamesOwned = JSON.parse(JSON.stringify(filteredGames));
-// 			gamesOwned.map(game => {
-// 				game.userId = userId;
-// 				return game;
-// 			});
-// 			return gamesOwned;
-// 		});
-// }
 
 function createFiltersFromQuery(query) {
 	const reservedFields = [
@@ -125,6 +101,16 @@ async function attachGameList(event,limit,skip,sort,filters) {
 	return eventCopy;
 }
 
+const addGames = event => {
+	return attachGameList(
+		event,
+		25,
+		0,
+		{method:'name',direction:1},
+		[],
+	);
+};
+
 router.get('/:eventId', (req, res) => {
 
 	const { eventId } = req.params;
@@ -149,16 +135,6 @@ router.get('/:eventId', (req, res) => {
 		.then(event => res.json(event));
 });
 
-const addGames = event => {
-	return attachGameList(
-		event,
-		25,
-		0,
-		{method:'name',direction:1},
-		[],
-	);
-};
-
 router.get('/', (req, res) => {
 	const { userId } = req.user;
 	return Event
@@ -174,5 +150,63 @@ router.get('/', (req, res) => {
 		.then(events => res.json(events));
 });
 
+function mergeDateTime (dateStr, TimeStr) {
+	const date = new Date(dateStr);
+	const time = new Date(TimeStr);
+	date.setHours(time.getHours());
+	date.setMinutes(time.getMinutes());
+	date.setSeconds(0);
+	date.setMilliseconds(0);
+	return date;
+}
+
+router.post('/', (req,res) => {
+	// TODO
+	// validate
+	//	must pass in valid userId for guests
+
+	const hostId = req.user.userId;
+	const event = req.body;
+
+	event.startDate = mergeDateTime(event.startDate, event.startTime);
+	delete event.startTime;
+
+	if (event.endTime && event.endDate) {
+		event.endDate = mergeDateTime(event.endDate, event.endTime);
+		delete event.endTime;
+	}
+	else if (event.endTime) {
+		event.endDate = mergeDateTime(event.startDate, event.endTime);
+		delete event.endTime;
+	} else if (event.endDate) {
+		event.endDate = mergeDateTime(event.endDate, event.startDate);
+	}
+
+	const guests = [];
+	for (const key in event) {
+		if (key.split('-')[0] === 'guest') {
+			const userId = event[key];
+			const host = (userId === hostId);
+			let rsvp = 'invited';
+			if (host) rsvp = 'host';
+			const newGuest = {
+				'user': userId,
+				userId,
+				rsvp,
+				host,
+				'invitedBy': userId
+			};
+			guests.push(newGuest);
+			delete event[key];
+		}
+	}
+	event.guests = guests;
+
+
+	return Event
+		.create(event)
+		.then(events => res.json(events));
+
+});
 
 module.exports = { router, createMatchFromFilters, createFiltersFromQuery };
