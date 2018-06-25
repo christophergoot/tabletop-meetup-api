@@ -20,16 +20,37 @@ const UserSchema = mongoose.Schema({
 	bggUsername: {type: String, default: ''}
 });
 
+// UserSchema.virtual('displayName').get(() => {
+// 	return this.firstName + ' ' + this.lastName || user.username;
+// });
+
+function createDisplayName(first,last,user) {
+	let display = (first + ' ' + last).trim();
+	if (display === '') display = user;
+	return display;
+}
+
 UserSchema.methods.serialize = function() {
+	const displayName = createDisplayName(this.firstName,this.lastName,this.username);
 	return {
 		userId: this._id.toString(),
 		username: this.username || '',
+		displayName,
 		firstName: this.firstName || '',
 		lastName: this.lastName || '',
 		bggUsername: this.bggUsername || ''
 	};
 };
-  
+
+UserSchema.methods.getName = function() {
+	const displayName = createDisplayName(this.firstName,this.lastName,this.username);
+	return {
+		userId: this._id.toString(),
+		displayName
+	};
+};
+
+
 UserSchema.methods.validatePassword = function(password) {
 	return bcrypt.compare(password, this.password);
 };

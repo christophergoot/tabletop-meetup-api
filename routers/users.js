@@ -5,10 +5,16 @@ const bodyParser = require('body-parser');
 const jsonParser = bodyParser.json();
 
 router.get('/', (req, res) => {
-	res.json({
-		ok: true,
-		message: 'you found the users router'
-	});
+	return User.find()
+		.then(users => users.map(user => user.getName()))
+		.then(userList => {
+			console.log(userList);
+			res.json({userList});
+		})
+		.catch(err => res.status(500).json({
+			error: 'something went wrong retreiving all registered users'
+		}));
+
 });
 
 function getUser(userId) {
