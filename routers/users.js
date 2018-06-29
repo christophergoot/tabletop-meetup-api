@@ -4,6 +4,7 @@ const { User } = require('../models');
 const bodyParser = require('body-parser');
 const jsonParser = bodyParser.json();
 
+// Retrieves all registered users
 router.get('/', (req, res) => {
 	return User.find()
 		.then(users => users.map(user => user.getName()))
@@ -125,9 +126,10 @@ router.post('/', jsonParser, (req, res) => {
 	lastName = lastName.trim();
 	bggUsername = bggUsername.trim();
 
-	return User.find({username})
+	User.find({username})
 		.count()
 		.then(count => {
+			console.log(count, 'is count');
 			if (count > 0) {
 				// There is an existing user with the same username
 				return Promise.reject({
@@ -141,20 +143,38 @@ router.post('/', jsonParser, (req, res) => {
 			return User.hashPassword(password);
 		})
 		.then(hash => {
+			console.log(hash, 'is hash');
 			return User.create({
 				username,
 				password: hash,
 				firstName,
 				lastName,
 				bggUsername
+
+				// 	}, (err, item) => {
+				// 		if (err) {
+				// 			return res.status(500).json({
+				// 				message: 'Internal Server Error'
+				// 			});
+				// 		}
+				// 		if (item) {
+				// 			console.log(`User \`${username}\` created.`);
+				// 			return res.json(item);
+				// 		}
+		
+				// 	});
+				// })
 			});
 		})
 		.then(user => {
+			console.log(user, 'is user');
+
 			return res.status(201).json(user.serialize());
 		})
 		.catch(err => {
-		// Forward validation errors on to the client, otherwise give a 500
-		// error because something unexpected has happened
+			console.log(err, 'is error');
+			// Forward validation errors on to the client, otherwise give a 500
+			// error because something unexpected has happened
 			if (err.reason === 'ValidationError') {
 				return res.status(err.code).json(err);
 			}
