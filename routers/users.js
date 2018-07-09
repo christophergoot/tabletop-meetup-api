@@ -1,15 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const { User } = require('../models');
+const { User, Collection } = require('../models');
 const bodyParser = require('body-parser');
 const jsonParser = bodyParser.json();
+const fetch = require('node-fetch');
+const unzip = require('zlib').gunzip;
 
 // Retrieves all registered users
 router.get('/', (req, res) => {
 	return User.find()
 		.then(users => users.map(user => user.getName()))
 		.then(userList => {
-			console.log(userList);
 			res.json({userList});
 		})
 		.catch(err => res.status(500).json({
@@ -19,7 +20,6 @@ router.get('/', (req, res) => {
 });
 
 function getUser(userId) {
-	console.log('userId', userId);
 	return User
 		.findOne({ '_id': userId })
 		.then(user => user.serialize());
@@ -129,7 +129,6 @@ router.post('/', jsonParser, (req, res) => {
 	User.find({username})
 		.count()
 		.then(count => {
-			console.log(count, 'is count');
 			if (count > 0) {
 				// There is an existing user with the same username
 				return Promise.reject({
@@ -142,37 +141,59 @@ router.post('/', jsonParser, (req, res) => {
 			// If there is no existing user, hash the password
 			return User.hashPassword(password);
 		})
-		.then(hash => {
-			console.log(hash, 'is hash');
-			return User.create({
+		.then(async hash => {
+			// create the new user
+			const newUser = await User.create({
 				username,
 				password: hash,
 				firstName,
 				lastName,
 				bggUsername
-
-				// 	}, (err, item) => {
-				// 		if (err) {
-				// 			return res.status(500).json({
-				// 				message: 'Internal Server Error'
-				// 			});
-				// 		}
-				// 		if (item) {
-				// 			console.log(`User \`${username}\` created.`);
-				// 			return res.json(item);
-				// 		}
-		
-				// 	});
-				// })
 			});
+			return newUser;
 		})
-		.then(user => {
-			console.log(user, 'is user');
+		.then(newUser => {
+			// create the new collection
+			if (!bggUsername) {
+				Collection.create({
+					userId: newUser._id,
+					games: []
+				});
+				return newUser;
+			}
+			fetch('http://bgg-json.azurewebsites.net/collection/' + bggUsername)
+				.then(bggGames => {
+					return new Promise(function(resolve, reject) {
+						let dataString = '';
+						bggGames.body.on('data', function(data) {
+							dataString += data.toString();
+						});
+						bggGames.body.on('end', function() {
+							try {
+								const gameList = JSON.parse(dataString);
+								resolve(gameList);
+							} catch(err) {
+								console.log(err);
+								resolve([]);
+							}
 
-			return res.status(201).json(user.serialize());
+						});
+					})
+						.then(gameList => {
+							Collection.create({
+								userId: newUser._id,
+								games: gameList
+							});
+						});
+				});
+			return newUser;
+		})
+		.then(newUser => {
+			// console.log(collection);
+			return res.status(201).json(newUser.serialize());
 		})
 		.catch(err => {
-			console.log(err, 'is error');
+			console.log(err);
 			// Forward validation errors on to the client, otherwise give a 500
 			// error because something unexpected has happened
 			if (err.reason === 'ValidationError') {
