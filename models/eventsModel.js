@@ -20,12 +20,6 @@ const EventSchema = mongoose.Schema({
 	]
 });
 
-// userId: [{ type: Schema.Types.ObjectId, ref: 'User' }]
-
-// const userDisplayName = new userDisplayName({
-
-// });
-
 EventSchema.methods.serialize = function() {
 	return {
 		eventId: this._id.toString(),
@@ -36,7 +30,6 @@ EventSchema.methods.serialize = function() {
 		games: this.games
 	};
 };
-
 
 const Event = mongoose.model('Event', EventSchema);
 

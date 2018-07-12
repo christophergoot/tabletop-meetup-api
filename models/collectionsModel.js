@@ -10,7 +10,7 @@ const CollectionSchema = mongoose.Schema({
 	},
 	games: [
 		{
-			gameId: String,
+			gameId: Number,
 			name: String,
 			image: String,
 			thumbnail: String,

@@ -90,6 +90,33 @@ async function getCollection(req) {
 	return collection;
 }
 
+async function addGame(req) {
+	console.log(req.body);
+	// TODO
+	// validate the game
+	// ensure it doesn't already exist
+	const userId = req.user.userId;
+	const { gameId } = req.body;
+
+	const exists = await Collection.find({ $and: [
+		{ userId },
+		{ games: { $elemMatch: { gameId } } }
+	]}).count();
+
+	if (exists) return Collection.findOneAndUpdate(
+		{ $and: [
+			{ userId },
+			{ games: { $elemMatch: { gameId } } }
+		]},
+		{ $set: { 'games.$': req.body } }
+	).catch(err => err);
+
+	else return Collection.findOneAndUpdate(
+		userId,
+		{ $push: { games: req.body } }
+	).catch(err => err);	
+}
+
 router.get('/:userId', (req, res) => {
 	getCollection(req)
 		.then(collection => res.json(collection))
@@ -104,6 +131,20 @@ router.get('/', (req, res) => {
 		.catch(err => res.status(500).json({
 			error: 'something went wrong retreiving collection'
 		}));
+});
+
+router.post('/add-game', (req, res) => {
+	addGame(req)
+		.then(game => {
+			console.log(game);
+			res.json(game);
+		})
+		.catch(err => {
+			console.log('error',err);
+			res.status(500).json({
+				error: 'something went wrong attempting to add or update a game to your collection'
+			});
+		});
 });
 
 module.exports = { router };

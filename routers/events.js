@@ -144,7 +144,6 @@ router.get('/', (req, res) => {
 
 		.then(async events => {
 			const many = await Promise.all(events.map(addGames));
-			console.log(many);
 			return many;
 		})
 		.then(events => res.json(events));
