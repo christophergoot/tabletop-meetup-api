@@ -91,29 +91,32 @@ async function getCollection(req) {
 }
 
 async function addGame(req) {
-	console.log(req.body);
-	// TODO
-	// validate the game
-	// ensure it doesn't already exist
 	const userId = req.user.userId;
-	const { gameId } = req.body;
-
-	const exists = await Collection.find({ $and: [
+	const { gameId, name, image,thumbnail, minPlayers, maxPlayers, 
+		playingTime, yearPublished, bggRating, averageRating, rank, 
+		numPlays, rating, isExpansion, owned, preOrdered, forTrade,
+		previousOwned, want, wantToPlay, wantToBuy, wishList, 
+		userComment } = req.body;
+	const game = { gameId, name, image,thumbnail, minPlayers, maxPlayers, 
+		playingTime, yearPublished, bggRating, averageRating, rank, 
+		numPlays, rating, isExpansion, owned, preOrdered, forTrade,
+		previousOwned, want, wantToPlay, wantToBuy, wishList, 
+		userComment };
+	const query = { $and: [
 		{ userId },
 		{ games: { $elemMatch: { gameId } } }
-	]}).count();
+	]};
+
+	const exists = await Collection.find(query).count();
 
 	if (exists) return Collection.findOneAndUpdate(
-		{ $and: [
-			{ userId },
-			{ games: { $elemMatch: { gameId } } }
-		]},
-		{ $set: { 'games.$': req.body } }
+		query,
+		{ $set: { 'games.$': game } }
 	).catch(err => err);
 
-	else return Collection.findOneAndUpdate(
-		userId,
-		{ $push: { games: req.body } }
+	else return Collection.update(
+		{ userId },
+		{ $push: { games: game } }
 	).catch(err => err);	
 }
 
