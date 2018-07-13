@@ -133,6 +133,28 @@ async function addGame(req) {
 	).catch(err => err);	
 }
 
+async function getUserWantToPlayList(req) {
+	// returns an array of gameId's the given user wants to play
+	const { userId } = req.params;
+	const collection = await Collection.findOne({userId});
+
+	if (!collection) throw new Error('collection for given user does not exist');
+	const wantToPlayList = collection.games.filter(game => game.wantToPlay).map(game => game.gameId);
+	return wantToPlayList;
+}
+
+
+router.get('/:userId/want-to-play', (req, res) => {
+	getUserWantToPlayList(req)
+		.then(list => res.json(list))
+		.catch(err => {
+			console.log(err);
+			res.status(500).json({
+				error: 'something went wrong retreiving user\'s want-to-play list'
+			});
+		});
+});
+
 router.get('/:userId', (req, res) => {
 	getCollection(req)
 		.then(collection => res.json(collection))

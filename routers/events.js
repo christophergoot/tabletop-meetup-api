@@ -204,7 +204,6 @@ async function castGameVote(req, eventSchema = Event) {
 			if (game.gameId === gameId) { // game has previously been voted for
 				// find existing vote (if exists) and remove it
 				
-				console.log('gameId',gameId);
 				const indexOfYes = game.yes.indexOf(userId);
 				const indexOfNo = game.no.indexOf(userId);
 				if (indexOfYes >= 0) game.yes.splice(indexOfYes, 1);
@@ -212,7 +211,6 @@ async function castGameVote(req, eventSchema = Event) {
 
 				game[vote].push(userId); // cast vote
 				voteConfirmation = true;
-				console.log('game vote', game[vote]);
 				return;
 			}
 		});
