@@ -184,23 +184,27 @@ function mergeDateTime (dateStr, TimeStr) {
 	return date;
 }
 
-async function castGameVote(req) {
+async function castGameVote(req, eventSchema = Event) {
+	console.log(arguments);
 	const { userId } = req.user;
 	const { eventId } = req.params;
 	const { gameId, vote } = req.body;
-	const eventExists = await Event.findById(eventId).count();
+	const eventExists = await eventSchema.findById(eventId).count();
 	if (!eventExists) throw new Error('event does not exist');
 	if (vote !== 'yes' && vote !== 'no') throw new Error('vote must be either \'yes\' or \'no\'');
 
-	else return Event.findById(eventId, (err, event) => {
+	else return eventSchema.findById(eventId, (err, event) => {
 		if (err) console.log('error', err);
 		if (event) console.log('event', event);
 		const successMessage = `successfully voted ${vote} for ${gameId}`;
 		let voteConfirmation = false;
 
+
 		event.gameVotes.forEach(game => {
 			if (game.gameId === gameId) { // game has previously been voted for
 				// find existing vote (if exists) and remove it
+				
+				console.log('gameId',gameId);
 				const indexOfYes = game.yes.indexOf(userId);
 				const indexOfNo = game.no.indexOf(userId);
 				if (indexOfYes >= 0) game.yes.splice(indexOfYes, 1);
@@ -208,6 +212,7 @@ async function castGameVote(req) {
 
 				game[vote].push(userId); // cast vote
 				voteConfirmation = true;
+				console.log('game vote', game[vote]);
 				return;
 			}
 		});
@@ -219,16 +224,7 @@ async function castGameVote(req) {
 		event.save(err => {
 			if (err) console.log('error', err);
 		});
-	})
-
-	// 	{ $and: [
-	// 		{ eventId },
-	// 		{ gameVotes: { $elemMatch: { gameId } } }
-	// 	] },
-	// 	{ $push: { 'gameVotes.$': { userId } } }
-	// )
-		.then(res => res)
-		.catch(err => err);	
+	});
 }
 // User.findOne({username: oldUsername}, function (err, user) {
 //     user.username = newUser.username;
@@ -290,4 +286,4 @@ router.get('/:eventId', (req, res) => {
 
 });
 
-module.exports = { router, createMatchFromFilters, createFiltersFromQuery };
+module.exports = { router, createMatchFromFilters, createFiltersFromQuery, castGameVote };

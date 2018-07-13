@@ -8,12 +8,12 @@ chai.use(chaiHttp);
 
 describe('/api', function () {
 
-	it('should 200 on GET request to /', function () {
+	it('should 401 on GET to protected resource', function () {
 		return chai.request(app)
-			.get('/api/')
+			.get('/api/events')
 			.then(function (res) {
-				res.should.have.status(200);
-				res.should.be.json;
+				res.should.have.status(401);
 			});
 	});
+	
 });
