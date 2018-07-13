@@ -17,6 +17,13 @@ const EventSchema = mongoose.Schema({
 			host: Boolean,
 			invitedBy: String
 		}
+	],
+	gameVotes: [
+		{
+			gameId: { type: Number, required: true },
+			yes: [String],
+			no: [String]
+		}
 	]
 });
 
@@ -27,7 +34,7 @@ EventSchema.methods.serialize = function() {
 		startDate: this.startDate,
 		endDate: this.endDate,
 		guests: this.guests,
-		games: this.games
+		gameVotes: this.gameVotes
 	};
 };
 

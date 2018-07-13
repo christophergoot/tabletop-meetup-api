@@ -68,9 +68,7 @@ async function getCollection(req) {
 	const sortQuery = {};
 	sortQuery[`games.${sort.method}`] = parseInt(sort.direction);
 	
-	let gameList;
-
-	gameList = await Collection
+	const gameList = await Collection
 		.aggregate( [
 			{ $match: { userId } },
 			{ $unwind: '$games' },
@@ -88,6 +86,21 @@ async function getCollection(req) {
 	gameList.forEach(game => games.push(game.games));
 	const collection = { userId, sort, limit, page, pageCount, games, filters };
 	return collection;
+}
+
+async function deleteGame(req) {
+	const userId = req.user.userId;
+	const gameId = parseInt(req.params.gameId);
+	const query = { $and: [
+		{ userId },
+		{ games: { $elemMatch: { gameId } } }
+	]};
+	const exists = await Collection.find(query).count();
+	if (!exists) return new Error('game does not exist in user\'s collection');
+	else return Collection.findOneAndUpdate(
+		query,
+		{ $pull: { games: { gameId } } }
+	);
 }
 
 async function addGame(req) {
@@ -146,6 +159,20 @@ router.post('/add-game', (req, res) => {
 			console.log('error',err);
 			res.status(500).json({
 				error: 'something went wrong attempting to add or update a game to your collection'
+			});
+		});
+});
+
+router.delete('/game/:gameId', (req, res) => {
+	deleteGame(req)
+		.then(game => {
+			console.log(game);
+			res.json(game);
+		})
+		.catch(err => {
+			console.log('error',err);
+			res.status(500).json({
+				error: 'something went wrong attempting remove a game from your collection'
 			});
 		});
 });
