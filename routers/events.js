@@ -168,6 +168,8 @@ function createNewEvent(req) {
 			delete event[key];
 		}
 	}
+	if (!guests.find(guest => guest.userId === hostId)) // if the guest list does not already include the host...
+		guests.push({ user: hostId, userId: hostId, rsvp: 'host', invitedBy: hostId}); // add the host to guest list
 	event.guests = guests;
 	return Event
 		.create(event)
@@ -185,7 +187,6 @@ function mergeDateTime (dateStr, TimeStr) {
 }
 
 async function castGameVote(req, eventSchema = Event) {
-	console.log(arguments);
 	const { userId } = req.user;
 	const { eventId } = req.params;
 	const { gameId, vote } = req.body;
@@ -198,7 +199,6 @@ async function castGameVote(req, eventSchema = Event) {
 		if (event) console.log('event', event);
 		const successMessage = `successfully voted ${vote} for ${gameId}`;
 		let voteConfirmation = false;
-
 
 		event.gameVotes.forEach(game => {
 			if (game.gameId === gameId) { // game has previously been voted for
@@ -238,6 +238,28 @@ async function castGameVote(req, eventSchema = Event) {
 
 // -------------- working endpoint
 
+async function deleteSingeleEvent(req) {
+	const { userId } = req.user;
+	const { eventId } = req.params;
+	const exists = await Event.findOne({ _id: eventId });
+	if (!exists) throw new Error('provided event does not exist');
+	const owner = exists.guests.filter(g => g.host === true && g.userId === userId);
+	if (!owner) throw new Error('only a host can delete an event');
+	console.log(exists);
+	// Event.findByIdAndRemove();
+}
+
+
+router.delete('/delete/:eventId', (req, res) => {
+	deleteSingeleEvent(req)
+		.then(res => res.json(res))
+		.catch(err => {
+			console.log(err);
+			res.status(500).json({
+				error: 'something went wrong deleting an event'
+			});
+		});
+});
 
 router.post('/:eventId/cast-vote', (req,res) => {
 	castGameVote(req)
