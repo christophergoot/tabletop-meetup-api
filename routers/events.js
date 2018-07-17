@@ -62,11 +62,12 @@ async function attachGameList(event,limit,skip,sort,filters) {
 	const games = [];
 	gameList.forEach(game => {
 		const { gameId, name, image, thumbnail, minPlayers, maxPlayers, playingTime,
-			yearPublished, bggRating, averageRating, rank, isExpansion } = game.games;
-
-		// if game has already been pushed to array, adds the ownerId to exising copy
+			yearPublished, bggRating, averageRating, rank, isExpansion, owned } = game.games;
 		const existingGameIndex = games.findIndex(g => g.gameId === game.games.gameId);
-		if (existingGameIndex >= 0) {
+
+		if (!owned) return;
+		// if game has already been pushed to array, adds the ownerId to exising copy
+		else if (existingGameIndex >= 0) {
 			games[existingGameIndex].owners.push(game.userId);
 		}
 		// catch bad resources 
@@ -75,7 +76,7 @@ async function attachGameList(event,limit,skip,sort,filters) {
 		else games.push({
 			gameId, name, image, thumbnail, minPlayers, maxPlayers, playingTime,
 			yearPublished, bggRating, averageRating, rank, isExpansion,
-			owners: [{userId: game.userId}]
+			owners: [game.userId]
 		});
 	});
 	const page = (skip / limit) + 1;
@@ -173,7 +174,10 @@ function createNewEvent(req) {
 	event.guests = guests;
 	return Event
 		.create(event)
-		.then(events => res.json(events));
+		.then(event => {
+			console.log('event', event);
+			return event;
+		});
 }
 
 function mergeDateTime (dateStr, TimeStr) {
@@ -189,7 +193,8 @@ function mergeDateTime (dateStr, TimeStr) {
 async function castGameVote(req, eventSchema = Event) {
 	const { userId } = req.user;
 	const { eventId } = req.params;
-	const { gameId, vote } = req.body;
+	const { game, vote } = req.body;
+	const { gameId } = game;
 	const eventExists = await eventSchema.findById(eventId).count();
 	if (!eventExists) throw new Error('event does not exist');
 	if (vote !== 'yes' && vote !== 'no') throw new Error('vote must be either \'yes\' or \'no\'');
@@ -224,19 +229,6 @@ async function castGameVote(req, eventSchema = Event) {
 		});
 	});
 }
-// User.findOne({username: oldUsername}, function (err, user) {
-//     user.username = newUser.username;
-//     user.password = newUser.password;
-//     user.rights = newUser.rights;
-
-//     user.save(function (err) {
-//         if(err) {
-//             console.error('ERROR!');
-//         }
-//     });
-// });
-
-// -------------- working endpoint
 
 async function deleteSingeleEvent(req) {
 	const { userId } = req.user;
@@ -246,13 +238,47 @@ async function deleteSingeleEvent(req) {
 	const owner = exists.guests.filter(g => g.host === true && g.userId === userId);
 	if (!owner) throw new Error('only a host can delete an event');
 	console.log(exists);
-	// Event.findByIdAndRemove();
+	return Event.findOneAndRemove({ _id: eventId });
+}
+
+async function changeRsvp(req) {
+	const { userId } = req.user;
+	const { eventId } = req.params;
+	const { rsvp } = req.body;
+	const possibleChanges = ['invited', 'maybe', 'yes', 'no', 'host'];
+	if (!possibleChanges.includes(rsvp)) throw new Error('RSVP status must be one of invited, maybe, yes, no, host');
+	const exists = await Event.findOne({ _id: eventId });
+	if (!exists) throw new Error('provided event does not exist');
+	return Event.findOne({ _id: eventId }, (err, event) => {
+		event.guests.find(g => g.userId === userId).rsvp = rsvp;
+
+		event.save(err => {
+			if (err) console.log('error', err);
+		});
+	});
 }
 
 
+router.post('/:eventId/rsvp', (req, res) => {
+	changeRsvp(req)
+		.then(reply => {
+			console.log(res);
+			res.json(reply);
+		})
+		.catch(err => {
+			console.log(err);
+			res.status(500).json({
+				error: 'something went wrong updating RSVP'
+			});
+		});
+});
+
 router.delete('/delete/:eventId', (req, res) => {
 	deleteSingeleEvent(req)
-		.then(res => res.json(res))
+		.then(res => {
+			console.log(res);
+			res.json(res);
+		})
 		.catch(err => {
 			console.log(err);
 			res.status(500).json({
@@ -278,9 +304,12 @@ router.post('/', (req,res) => {
 	//	must pass in valid userId for guests
 	createNewEvent(req)
 		.then(event => res.json(event))
-		.catch(err => res.status(500).json({
-			error: 'something went wrong creating a new Event'
-		}));
+		.catch(err => { 
+			console.log('err', err);
+			res.status(500).json({
+				error: 'something went wrong creating a new Event'
+			});
+		});
 });
 
 router.get('/', (req, res) => {
