@@ -170,7 +170,7 @@ function createNewEvent(req) {
 		}
 	}
 	if (!guests.find(guest => guest.userId === hostId)) // if the guest list does not already include the host...
-		guests.push({ user: hostId, userId: hostId, rsvp: 'host', invitedBy: hostId}); // add the host to guest list
+		guests.push({ user: hostId, userId: hostId, rsvp: 'host', host: true, invitedBy: hostId}); // add the host to guest list
 	event.guests = guests;
 	return Event
 		.create(event)
@@ -249,21 +249,36 @@ async function changeRsvp(req) {
 	if (!possibleChanges.includes(rsvp)) throw new Error('RSVP status must be one of invited, maybe, yes, no, host');
 	const exists = await Event.findOne({ _id: eventId });
 	if (!exists) throw new Error('provided event does not exist');
-	return Event.findOne({ _id: eventId }, (err, event) => {
+	Event.findOne({ _id: eventId }, (err, event) => {
 		event.guests.find(g => g.userId === userId).rsvp = rsvp;
-
 		event.save(err => {
 			if (err) console.log('error', err);
 		});
 	});
+	return Event.findOne({ _id: eventId })
+		.populate('guests.user', 'firstName lastName username')
+		.then(event => event.serialize())
+		.then(event => {
+			const sort = {
+				method: req.query.sortMethod || 'name',
+				direction: req.query.sortDirection || 1
+			};
+			const filters = createFiltersFromQuery(req.query);
+			const limit = parseInt(req.query.limit) || 25;
+			const page = parseInt(req.query.page) || 1;
+			const skip = (page -1) * limit;
+	
+			return attachGameList(event,limit,skip,sort,filters);
+		});
+
 }
 
 
 router.post('/:eventId/rsvp', (req, res) => {
 	changeRsvp(req)
-		.then(reply => {
-			console.log(res);
-			res.json(reply);
+		// .then(event => event.serialize())
+		.then(event => {
+			res.json(event);
 		})
 		.catch(err => {
 			console.log(err);
@@ -303,6 +318,7 @@ router.post('/', (req,res) => {
 	// validate
 	//	must pass in valid userId for guests
 	createNewEvent(req)
+		.then(event => event.serialize())
 		.then(event => res.json(event))
 		.catch(err => { 
 			console.log('err', err);
