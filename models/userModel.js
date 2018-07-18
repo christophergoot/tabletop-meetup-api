@@ -47,6 +47,7 @@ UserSchema.methods.getName = function() {
 	const displayName = createDisplayName(this.firstName,this.lastName,this.username);
 	return {
 		userId: this._id.toString(),
+		username: this.username,
 		displayName
 	};
 };

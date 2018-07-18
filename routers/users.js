@@ -19,6 +19,19 @@ router.get('/', (req, res) => {
 
 });
 
+router.get('/username/:username', (req, res) => {
+	const { username, index } = req.params;
+	return User.findOne({username})
+		.then(user => user.getName())
+		.then(user => res.json({user}))
+		.catch(err => res.status(422).json({
+			code: 422,
+			reason: 'ValidationError',
+			message: 'not a valid username',
+			location: 'guests'
+		}));
+});
+
 function getUser(userId) {
 	return User
 		.findOne({ '_id': userId })
