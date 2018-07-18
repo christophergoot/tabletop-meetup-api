@@ -11,7 +11,7 @@ router.get('/', (req, res) => {
 	return User.find()
 		.then(users => users.map(user => user.getName()))
 		.then(userList => {
-			res.json({userList});
+			res.json({ userList });
 		})
 		.catch(err => res.status(500).json({
 			error: 'something went wrong retreiving all registered users'
@@ -19,11 +19,12 @@ router.get('/', (req, res) => {
 
 });
 
+// get user by username
 router.get('/username/:username', (req, res) => {
 	const { username, index } = req.params;
-	return User.findOne({username})
+	return User.findOne({ username })
 		.then(user => user.getName())
-		.then(user => res.json({user}))
+		.then(user => res.json({ user }))
 		.catch(err => res.status(422).json({
 			code: 422,
 			reason: 'ValidationError',
@@ -52,7 +53,7 @@ router.get('/:userId', (req, res) => {
 router.post('/', jsonParser, (req, res) => {
 	const requiredFields = ['username', 'password'];
 	const missingField = requiredFields.find(field => !(field in req.body));
-  
+
 	if (missingField) {
 		return res.status(422).json({
 			code: 422,
@@ -61,12 +62,12 @@ router.post('/', jsonParser, (req, res) => {
 			location: missingField
 		});
 	}
-  
+
 	const stringFields = ['username', 'password', 'firstName', 'lastName', 'bggUsername'];
 	const nonStringField = stringFields.find(
 		field => field in req.body && typeof req.body[field] !== 'string'
 	);
-  
+
 	if (nonStringField) {
 		return res.status(422).json({
 			code: 422,
@@ -75,7 +76,7 @@ router.post('/', jsonParser, (req, res) => {
 			location: nonStringField
 		});
 	}
-  
+
 	// If the username and password aren't trimmed we give an error.  Users might
 	// expect that these will work without trimming (i.e. they want the password
 	// "foobar ", including the space at the end).  We need to reject such values
@@ -87,7 +88,7 @@ router.post('/', jsonParser, (req, res) => {
 	const nonTrimmedField = explicityTrimmedFields.find(
 		field => req.body[field].trim() !== req.body[field]
 	);
-  
+
 	if (nonTrimmedField) {
 		return res.status(422).json({
 			code: 422,
@@ -96,7 +97,7 @@ router.post('/', jsonParser, (req, res) => {
 			location: nonTrimmedField
 		});
 	}
-  
+
 	const sizedFields = {
 		username: {
 			min: 1
@@ -118,7 +119,7 @@ router.post('/', jsonParser, (req, res) => {
 			'max' in sizedFields[field] &&
 			req.body[field].trim().length > sizedFields[field].max
 	);
-  
+
 	if (tooSmallField || tooLargeField) {
 		return res.status(422).json({
 			code: 422,
@@ -131,15 +132,20 @@ router.post('/', jsonParser, (req, res) => {
 			location: tooSmallField || tooLargeField
 		});
 	}
-  
-	let {username, password, firstName = '', lastName = '', bggUsername = ''} = req.body;
+
+	let { username, password, firstName = '', lastName = '', bggUsername = '' } = req.body;
 	// Username and password come in pre-trimmed, otherwise we throw an error
 	// before this
 	firstName = firstName.trim();
 	lastName = lastName.trim();
 	bggUsername = bggUsername.trim();
 
-	User.find({username})
+	// if (bggUsername) {
+	// 	checkBggForUsername(bggUsername)
+	// 		.then()
+	// };
+
+	User.find({ username })
 		.count()
 		.then(count => {
 			if (count > 0) {
@@ -176,16 +182,16 @@ router.post('/', jsonParser, (req, res) => {
 			}
 			fetch('http://bgg-json.azurewebsites.net/collection/' + bggUsername)
 				.then(bggGames => {
-					return new Promise(function(resolve, reject) {
+					return new Promise(function (resolve, reject) {
 						let dataString = '';
-						bggGames.body.on('data', function(data) {
+						bggGames.body.on('data', function (data) {
 							dataString += data.toString();
 						});
-						bggGames.body.on('end', function() {
+						bggGames.body.on('end', function () {
 							try {
 								const gameList = JSON.parse(dataString);
 								resolve(gameList);
-							} catch(err) {
+							} catch (err) {
 								console.log(err);
 								resolve([]);
 							}
@@ -212,7 +218,7 @@ router.post('/', jsonParser, (req, res) => {
 			if (err.reason === 'ValidationError') {
 				return res.status(err.code).json(err);
 			}
-			res.status(500).json({code: 500, message: 'Internal server error'});
+			res.status(500).json({ code: 500, message: 'Internal server error' });
 		});
 });
 

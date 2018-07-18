@@ -133,7 +133,9 @@ function getSingleEvent(req) {
 		.then(event => attachGameList(event,limit,skip,sort,filters));
 }
 
-function createNewEvent(req) {
+async function createNewEvent(req) {
+	// validate everything
+
 	const hostId = req.user.userId;
 	const event = req.body;
 
@@ -152,22 +154,50 @@ function createNewEvent(req) {
 	}
 
 	const guests = [];
+
+	const usernames = [];
 	for (const key in event) {
 		if (key.split('-')[0] === 'guest') {
-			const userId = event[key];
-			const host = (userId === hostId);
-			let rsvp = 'invited';
-			if (host) rsvp = 'host';
-			const newGuest = {
-				'user': userId,
-				userId,
-				rsvp,
-				host,
-				'invitedBy': userId
-			};
-			guests.push(newGuest);
+			usernames.push(event[key]);
 			delete event[key];
 		}
+	}
+	if (event.guests.length>0) {
+		const eventPromises = event.guests.map((guest,i) => {
+			// const guestField = Object.keys(guest)[0]; // guest-0
+			const guestField = 'guests';
+			// const guestField = `guests[${i}]`; // guest-0
+			// verify that user exists
+			const { username } = guest;
+			return User.findOne({ username })
+				.then(user => user.getName().userId)
+				.then(userId => {
+					const host = (userId === hostId);
+					let rsvp = 'invited';
+					if (host) rsvp = 'host';
+					return {
+						'user': userId,
+						userId,
+						rsvp,
+						host,
+						'invitedBy': hostId
+					};
+				})
+				.catch(err => {
+					console.log(err);
+					const guestLocation = `guests[${i}].${guestField}`;
+					throw new Error
+					(`422%${username} is not a valid registerd user%${guestField}%ValidationError`);
+					// ({
+					// 	code: 422,
+					// 	reason: 'ValidationError',
+					// 	message: 'not a valid username',
+					// 	location: guestField
+					// });
+				});
+		});	
+		const newGuests = await Promise.all(eventPromises);
+		guests.push(...newGuests); 
 	}
 	if (!guests.find(guest => guest.userId === hostId)) // if the guest list does not already include the host...
 		guests.push({ user: hostId, userId: hostId, rsvp: 'host', host: true, invitedBy: hostId}); // add the host to guest list
@@ -179,6 +209,44 @@ function createNewEvent(req) {
 			return event;
 		});
 }
+
+function convertError (error) {
+	const errorParts = error.split('%');
+	const code = errorParts[0];
+	const message = errorParts[1];
+	const location = errorParts[2];
+	const reason = errorParts[3];
+	const errorResult = {
+		code,
+		message,
+		location,
+		reason
+	};
+	switch(code) {
+	case '422':
+		return {...errorResult};
+
+	default:
+		return {...errorResult, code: 500, reason: 'UnknownError'};
+	}
+}
+
+router.post('/', (req,res) => {
+	createNewEvent(req)
+		.then(event => event.serialize())
+		.then(event => res.json(event))
+		.catch(err => { 
+			console.log('err', err);
+			if (err) {
+				const error = convertError(err.message);
+				res.status(parseInt(error.code)).json(error);
+			}
+			else res.status(500).json({
+				error: 'something went wrong creating a new Event'
+			});
+		});
+});
+
 
 function mergeDateTime (dateStr, TimeStr) {
 	const date = new Date(dateStr);
@@ -309,21 +377,6 @@ router.post('/:eventId/cast-vote', (req,res) => {
 			console.log(err);
 			res.status(500).json({
 				error: 'something went wrong casting a game vote'
-			});
-		});
-});
-
-router.post('/', (req,res) => {
-	// TODO
-	// validate
-	//	must pass in valid userId for guests
-	createNewEvent(req)
-		.then(event => event.serialize())
-		.then(event => res.json(event))
-		.catch(err => { 
-			console.log('err', err);
-			res.status(500).json({
-				error: 'something went wrong creating a new Event'
 			});
 		});
 });
