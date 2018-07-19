@@ -39,6 +39,36 @@ function getUser(userId) {
 		.then(user => user.serialize());
 }
 
+function fetchBggUser(username) {
+	const url = 'https://cors-anywhere.herokuapp.com/' 
+	+ 'https://www.boardgamegeek.com/xmlapi2/user?'
+	+ `name=${username}`
+	+ '&domain=boardgame';
+	return fetch(url, {
+		method: 'GET',
+		'Access-Control-Allow-Origin': 'https://www.boardgamegeek.com'
+	})
+		.then(res => res.text())
+		.then(res => {
+			let user;
+			parseString(res, (err, result) => {
+				if (err) console.log(err);
+				if (result) user = { name: result.user.$.name, bggId: result.user.$.id };
+				else return;
+			});
+			return user;
+		});
+}
+
+router.get('/check-bgg-user/:username', (req, res) => {
+	const { username } = req.params;
+	fetchBggUser(username)
+		.then(user => res.json(user))
+		.catch(err => res.status(500).json({
+			error: 'something went wrong retreiving bgg user'
+		}));		
+});
+
 router.get('/:userId', (req, res) => {
 	const { userId } = req.params;
 	getUser(userId)
