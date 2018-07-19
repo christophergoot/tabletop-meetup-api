@@ -59,24 +59,23 @@ const event = {
 	'__v' : 5
 };
 
-describe('castGameVote', _ => {
-	it('should cast a yes vote for previously voted for game', () => {
+// describe('castGameVote', _ => {
+// 	it('should cast a yes vote for previously voted for game', () => {
 
-		const eventSchema = {
-			findById: (eventId, callback) => {
-				if (callback) {
-					callback(err, event);
-					return expect(event.gameVotes[0].yes.length).to.equal(1);
-				}
-				return {
-					count: () => Promise.resolve(10)			
-				};
-			},
-
-		};
-		castGameVote(req, eventSchema);
-		// (event.gameVotes[0].yes.length).should.equal(1);
+// 		const eventSchema = {
+// 			findById: (eventId, callback) => {
+// 				if (callback) {
+// 					callback(err, event);
+// 					return expect(event.gameVotes[0].yes.length).to.equal(1);
+// 				}
+// 				return {
+// 					count: () => Promise.resolve(10)			
+// 				};
+// 			},
+// 		};
+// 		castGameVote(req, eventSchema);
+// 		// (event.gameVotes[0].yes.length).should.equal(1);
 		
-	});
-});
+// 	});
+// });
 
