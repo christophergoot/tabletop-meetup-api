@@ -164,12 +164,9 @@ async function createNewEvent(req) {
 	}
 	if (event.guests.length>0) {
 		const eventPromises = event.guests.map((guest,i) => {
-			// const guestField = Object.keys(guest)[0]; // guest-0
 			const guestField = 'guests';
-			// const guestField = `guests[${i}]`; // guest-0
-			// verify that user exists
 			const { username } = guest;
-			return User.findOne({ username })
+			return User.findOne({ username }) 			// verify that user exists
 				.then(user => user.getName().userId)
 				.then(userId => {
 					const host = (userId === hostId);
@@ -185,15 +182,8 @@ async function createNewEvent(req) {
 				})
 				.catch(err => {
 					console.log(err);
-					const guestLocation = `guests[${i}].${guestField}`;
 					throw new Error
 					(`422%${username} is not a valid registerd user%${guestField}%ValidationError`);
-					// ({
-					// 	code: 422,
-					// 	reason: 'ValidationError',
-					// 	message: 'not a valid username',
-					// 	location: guestField
-					// });
 				});
 		});	
 		const newGuests = await Promise.all(eventPromises);

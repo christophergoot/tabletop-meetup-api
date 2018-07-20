@@ -4,7 +4,6 @@ const { User, Collection } = require('../models');
 const bodyParser = require('body-parser');
 const jsonParser = bodyParser.json();
 const fetch = require('node-fetch');
-const unzip = require('zlib').gunzip;
 
 // Retrieves all registered users
 router.get('/', (req, res) => {
@@ -21,7 +20,7 @@ router.get('/', (req, res) => {
 
 // get user by username
 router.get('/username/:username', (req, res) => {
-	const { username, index } = req.params;
+	const { username } = req.params;
 	return User.findOne({ username })
 		.then(user => user.getName())
 		.then(user => res.json({ user }))
@@ -40,13 +39,13 @@ function getUser(userId) {
 }
 
 function fetchBggUser(username) {
-	const url = 'https://cors-anywhere.herokuapp.com/' 
+	const url = 'http://cors-anywhere.herokuapp.com/' 
 	+ 'https://www.boardgamegeek.com/xmlapi2/user?'
 	+ `name=${username}`
 	+ '&domain=boardgame';
 	return fetch(url, {
 		method: 'GET',
-		'Access-Control-Allow-Origin': 'https://www.boardgamegeek.com'
+		// origin: 'https://www.boardgamegeek.com'
 	})
 		.then(res => res.text())
 		.then(res => {
@@ -170,10 +169,20 @@ router.post('/', jsonParser, (req, res) => {
 	lastName = lastName.trim();
 	bggUsername = bggUsername.trim();
 
-	// if (bggUsername) {
-	// 	checkBggForUsername(bggUsername)
-	// 		.then()
-	// };
+	if (bggUsername) {
+		fetchBggUser(bggUsername)
+			.then(res => {
+				console.log('bgg search', res);
+			})
+			.catch(err => {
+				return res.status(422).json({
+					code: 422,
+					reason: 'ValidationError',
+					message: 'Not a valid BoardGameGeek username',
+					location: bggUsername
+				});
+			});
+	}
 
 	User.find({ username })
 		.count()
