@@ -162,6 +162,7 @@ async function createNewEvent(req) {
 			delete event[key];
 		}
 	}
+	if (event.guests.length === 0) throw new Error('422%Must invite at least 1 guest%guests%ValidationError');
 	if (event.guests.length>0) {
 		const eventPromises = event.guests.map((guest,i) => {
 			const guestField = 'guests';
