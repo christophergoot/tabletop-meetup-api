@@ -308,28 +308,29 @@ async function changeRsvp(req) {
 	if (!possibleChanges.includes(rsvp)) throw new Error('RSVP status must be one of invited, maybe, yes, no, host');
 	const exists = await Event.findOne({ _id: eventId });
 	if (!exists) throw new Error('provided event does not exist');
-	Event.findOne({ _id: eventId }, (err, event) => {
+	return Event.findOne({ _id: eventId }, (err, event) => {
 		event.guests.find(g => g.userId === userId).rsvp = rsvp;
 		event.save(err => {
 			if (err) console.log('error', err);
 		});
-	});
-	return Event.findOne({ _id: eventId })
-		.populate('guests.user', 'firstName lastName username')
-		.then(event => event.serialize())
-		.then(event => {
-			const sort = {
-				method: req.query.sortMethod || 'name',
-				direction: req.query.sortDirection || 1
-			};
-			const filters = createFiltersFromQuery(req.query);
-			const limit = parseInt(req.query.limit) || 25;
-			const page = parseInt(req.query.page) || 1;
-			const skip = (page -1) * limit;
+	}).then(event => {
+		return Event.findOne({ _id: event._id })
+			.populate('guests.user', 'firstName lastName username')
+			.then(event => event.serialize());
+		// .then(event => {
+		// 	const sort = {
+		// 		method: req.query.sortMethod || 'name',
+		// 		direction: req.query.sortDirection || 1
+		// 	};
+		// 	const filters = createFiltersFromQuery(req.query);
+		// 	const limit = parseInt(req.query.limit) || 25;
+		// 	const page = parseInt(req.query.page) || 1;
+		// 	const skip = (page -1) * limit;
 	
-			return attachGameList(event,limit,skip,sort,filters);
-		});
+		// 	return attachGameList(event,limit,skip,sort,filters);
 
+		// });
+	});
 }
 
 
