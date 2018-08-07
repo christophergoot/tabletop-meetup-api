@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { Event, User, Collection } = require('../models');
+const { getUserWantToPlayList } = require('./collections');
 
 const passport = require('passport');
 const jwtAuth = passport.authenticate('jwt', { session: false });
@@ -333,6 +334,72 @@ async function changeRsvp(req) {
 	});
 }
 
+async function getTopGames(req) {
+	const { userId } = req.user;
+	const { eventId } = req.params;
+	const exists = await Event.findOne({ _id: eventId });
+	if (!exists) throw new Error('provided event does not exist');
+
+	const list = await Event.findOne({ _id: eventId }).then(async origEvent => {
+		const event = await attachGameList(origEvent,1000,0,{method:'averageRating',direction:1},[]);
+		const gameList = event.games;
+		return await Promise.all(event.guests.map(async guest => {
+			const req = { params: { userId: guest.userId }};
+			const list = await getUserWantToPlayList(req);
+			return list;
+		})).then(userLists => {
+			return gameList.map(game => {
+				let yesVotes = 0,
+					noVotes = 0,
+					usersWhoWantToPlay = 0;
+				const votes = event.gameVotes.find(vote => vote.gameId === game.gameId);
+				if (votes) {
+					yesVotes = votes.yes.length;
+					noVotes = votes.no.length;
+				}
+				userLists.forEach(list => {
+					if (list.list) {
+						if (list.list.includes(game.gameId)) usersWhoWantToPlay ++;
+					}
+				});
+				return ({
+					...game,
+					eventVotes: yesVotes + usersWhoWantToPlay - noVotes
+				});
+			});
+	
+		}).then(rankedList => {
+			const filteredList = rankedList
+				.filter(game => game.eventVotes > 0)
+				.sort((a,b) => {
+					if (a.averageRating > b.averageRating) return -1;
+					if (a.averageRating < b.averageRating) return 1;
+					return 0;				
+				})
+				.sort((a,b) => {
+					if (a.eventVotes > b.eventVotes) return -1;
+					if (a.eventVotes < b.eventVotes) return 1;
+					return 0;
+				});
+			return filteredList;
+		});
+	});
+	return list;
+}
+
+
+router.get('/:eventId/top-games', (req, res) => {
+	getTopGames(req)
+		.then(list => {
+			res.json(list);
+		})
+		.catch(err => {
+			console.log(err);
+			res.status(500).json({
+				error: 'something went wrong fetching Event Top Games List'
+			});
+		});
+});
 
 router.post('/:eventId/rsvp', (req, res) => {
 	changeRsvp(req)

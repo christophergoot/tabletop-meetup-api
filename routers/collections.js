@@ -54,7 +54,8 @@ async function getCollection(req) {
 	const { sortMethod, sortDirection } = req.query;
 
 	const filters = [];
-	createFiltersFromQuery(req.query).forEach(el => filters.push(el));
+	const tempFilters = createFiltersFromQuery(req.query);
+	tempFilters.forEach(el => filters.push(el));
 	const match = createMatchFromFilters(filters);
 
 	const limit = (parseInt(req.query.limit)) || 25;
@@ -157,7 +158,9 @@ router.get('/:userId/want-to-play', (req, res) => {
 
 router.get('/:userId', (req, res) => {
 	getCollection(req)
-		.then(collection => res.json(collection))
+		.then(collection => {
+			res.json(collection);
+		})
 		.catch(err => res.status(500).json({
 			error: 'something went wrong retreiving collection'
 		}));
@@ -199,4 +202,4 @@ router.delete('/game/:gameId', (req, res) => {
 		});
 });
 
-module.exports = { router };
+module.exports = { router, getUserWantToPlayList };
