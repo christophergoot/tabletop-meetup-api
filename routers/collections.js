@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { Collection } = require('../models');
-const { createFiltersFromQuery, 
-	createMatchFromFilters } = require('./events');
+// const { createFiltersFromQuery } = require('./events');
+// const { createMatchFromFilters } = require('./events');
 
 
 const passport = require('passport');
@@ -10,42 +10,84 @@ const jwtAuth = passport.authenticate('jwt', { session: false });
 router.use(jwtAuth);
 
 
-function sortGamesByMethod(games, sort) {
-	const sorted = games.sort((a,b) => {
-		if (a[sort.method] < b[sort.method]) {
-			return -1;
-		} 
+// function sortGamesByMethod(games, sort) {
+// 	const sorted = games.sort((a,b) => {
+// 		if (a[sort.method] < b[sort.method]) {
+// 			return -1;
+// 		} 
 
-		if (a[sort.method] > b[sort.method]) {
-			return 1;
-		} 
+// 		if (a[sort.method] > b[sort.method]) {
+// 			return 1;
+// 		} 
 
-		return 0;
-	});
-	if (sort.direction === 'desc') sorted.reverse();
-	return sorted;
+// 		return 0;
+// 	});
+// 	if (sort.direction === 'desc') sorted.reverse();
+// 	return sorted;
+// }
+
+// const filter = [
+// 	{
+// 		field: 'yearPublished',
+// 		is: '$lte',
+// 		value: 2015,
+// 		and: '$gt',
+// 		andValue: 1985
+// 	},
+// 	{
+// 		field: 'rsvp',
+// 		is: '$eq',
+// 		value: 'attending'
+// 	}
+// ];
+
+// const filterQuery = { $match: {} };
+// filter.forEach(filter => {
+// 	if (filter.and)
+// 		filterQuery.$match[filter.field] = { [filter.is]: filter.value, [filter.and]: filter.andValue };
+// 	else filterQuery.$match[filter.field] = { [filter.is]: filter.value };
+// });
+
+function createFiltersFromQuery(query) {
+	const reservedFields = [
+		'sortMethod',
+		'sortDirection',
+		'page',
+		'pageCount',
+		'limit'
+	];
+	const filters = [];
+	for(let key in query) {
+		if(query.hasOwnProperty(key) && !reservedFields.includes(key)) {
+			const range = query[key].split(':');
+			if (range.length === 1) {
+				filters.push({
+					field: key,
+					value: range[0]
+				});
+			} else {
+				filters.push({
+					field: key,
+					range: {
+						min: parseInt(range[0],10),
+						max: parseInt(range[1],10)
+					}
+				});
+			}
+		}
+	}
+	return filters;
 }
 
-const filter = [
-	{
-		field: 'yearPublished',
-		is: '$lte',
-		value: 2015,
-		and: '$gt',
-		andValue: 1985
-	},
-	{
-		field: 'rsvp',
-		is: '$eq',
-		value: 'attending'
-	}
-];
-const filterQuery = { $match: {} };
-filter.forEach(filter => {
-	if (filter.and)
-		filterQuery.$match[filter.field] = { [filter.is]: filter.value, [filter.and]: filter.andValue };
-	else filterQuery.$match[filter.field] = { [filter.is]: filter.value };
-});
+function createMatchFromFilters(filters) {
+	const match = {$match: {}};
+	filters.forEach(filter => {
+		if (filter.value === 'true') match.$match[`games.${filter.field}`] = true;
+		else if (filter.value === 'false') match.$match[`games.${filter.field}`] = false;
+		else match.$match[`games.${filter.field}`] = {$gte: filter.range.min, $lte: filter.range.max};
+	});
+	return match;
+}
 
 async function getCollection(req) {
 	let userId = '';
@@ -54,8 +96,8 @@ async function getCollection(req) {
 	const { sortMethod, sortDirection } = req.query;
 
 	const filters = [];
-	const tempFilters = createFiltersFromQuery(req.query);
-	tempFilters.forEach(el => filters.push(el));
+	const tempFilters =  createFiltersFromQuery(req.query);
+	if (tempFilters) tempFilters.forEach(el => filters.push(el));
 	const match = createMatchFromFilters(filters);
 
 	const limit = (parseInt(req.query.limit)) || 25;

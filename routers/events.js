@@ -463,4 +463,9 @@ router.get('/:eventId', (req, res) => {
 
 });
 
-module.exports = { router, createMatchFromFilters, createFiltersFromQuery, castGameVote };
+module.exports = { 
+	router, 
+	createMatchFromFilters, 
+	createFiltersFromQuery, 
+	castGameVote 
+};
